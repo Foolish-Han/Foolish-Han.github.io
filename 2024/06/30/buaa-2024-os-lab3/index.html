@@ -1,0 +1,377 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>BUAA 2024 OS Lab3 | 人月神话</title><meta name="author" content="Foolish-Han"><meta name="copyright" content="Foolish-Han"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="Lab 3 实验报告思考题Thinking 3.1 请结合 MOS 中的页目录自映射应用解释代码中 e-&gt; env_pgdir [PDX(UVPT)] &#x3D; PADDR(e-&gt; env_pgdir) | PTE_V 的含义。  UVPT(user virtual page table)：用户页表起始处的内核虚拟地址 PDX(UVPT)：UVPT 的页目录号 PADDR(e-&gt; en">
+<meta property="og:type" content="article">
+<meta property="og:title" content="BUAA 2024 OS Lab3">
+<meta property="og:url" content="https://foolish-han.github.io/2024/06/30/buaa-2024-os-lab3/index.html">
+<meta property="og:site_name" content="人月神话">
+<meta property="og:description" content="Lab 3 实验报告思考题Thinking 3.1 请结合 MOS 中的页目录自映射应用解释代码中 e-&gt; env_pgdir [PDX(UVPT)] &#x3D; PADDR(e-&gt; env_pgdir) | PTE_V 的含义。  UVPT(user virtual page table)：用户页表起始处的内核虚拟地址 PDX(UVPT)：UVPT 的页目录号 PADDR(e-&gt; en">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://foolish-han.github.io/img/cover4.png">
+<meta property="article:published_time" content="2024-06-30T04:05:58.000Z">
+<meta property="article:modified_time" content="2024-06-30T04:15:30.005Z">
+<meta property="article:author" content="Foolish-Han">
+<meta property="article:tag" content="进程管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://foolish-han.github.io/img/cover4.png"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://foolish-han.github.io/2024/06/30/buaa-2024-os-lab3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin=""/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.13.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":400},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"limitCount":50,"languages":{"author":"作者: Foolish-Han","link":"链接: ","source":"来源: 人月神话","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。"}},
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.1/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: true,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'BUAA 2024 OS Lab3',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-06-30 12:15:30'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><meta name="generator" content="Hexo 7.2.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+  window.addEventListener('load',() => { preloader.endLoading() })
+
+  if (false) {
+    document.addEventListener('pjax:send', () => { preloader.initLoading() })
+    document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+  }
+})()</script><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/avatar.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">13</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">16</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/img/cover4.png')"><nav id="nav"><span id="blog-info"><a href="/" title="人月神话"><img class="site-icon" src="/img/logo.png#%20image"/><span class="site-name">人月神话</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/Gallery/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">BUAA 2024 OS Lab3</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-06-30T04:05:58.000Z" title="发表于 2024-06-30 12:05:58">2024-06-30</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-06-30T04:15:30.005Z" title="更新于 2024-06-30 12:15:30">2024-06-30</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/OS/">OS</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">字数总计:</span><span class="word-count">2.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>8分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="BUAA 2024 OS Lab3"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="Lab-3-实验报告"><a href="#Lab-3-实验报告" class="headerlink" title="Lab 3 实验报告"></a>Lab 3 实验报告</h1><h2 id="思考题"><a href="#思考题" class="headerlink" title="思考题"></a>思考题</h2><h3 id="Thinking-3-1"><a href="#Thinking-3-1" class="headerlink" title="Thinking 3.1"></a>Thinking 3.1</h3><blockquote>
+<p>请结合 MOS 中的页目录自映射应用解释代码中 e-&gt; env_pgdir [PDX(UVPT)] = PADDR(e-&gt; env_pgdir) | PTE_V 的含义。</p>
+</blockquote>
+<p>UVPT(user virtual page table)：用户页表起始处的内核虚拟地址</p>
+<p>PDX(UVPT)：UVPT 的页目录号</p>
+<p>PADDR(e-&gt; env_pgdir)：用户页目录的内核虚拟地址</p>
+<p>PTE_V：页表项的有效位</p>
+<p>将页目录中第 PDX(UVPT) 项映射到页目录，使得用户可以访问到页目录的内容（只读）。</p>
+<h3 id="Thinking-3-2"><a href="#Thinking-3-2" class="headerlink" title="Thinking 3.2"></a>Thinking 3.2</h3><blockquote>
+<p>elf_load_seg 以函数指针的形式，接受外部自定义的回调函数 map_page。请你找到与之相关的 data 这一参数在此处的来源，并思考它的作用。没有这个参数可不可以？为什么？</p>
+</blockquote>
+<ul>
+<li><code>data</code> 在 <code>load_icode</code> 函数调用 <code>elf_load_seg</code> 时，以参数 <code>e</code> 的形式传入，即进程页控制块的指针。</li>
+<li>没有这个参数不可以。这个参数在 <code>elf_load_seg</code> 回调 <code>load_icode_mapper</code> 时，需要通过 <code>e-&gt;env_pgdir</code> 和 <code>e-&gt;env_asid</code> 为其指明页目录和命名空间，使得虚拟地址可以正确映射到复制到的物理空间中</li>
+</ul>
+<h3 id="Thinking-3-3"><a href="#Thinking-3-3" class="headerlink" title="Thinking 3.3"></a>Thinking 3.3</h3><blockquote>
+<p>结合 elf_load_seg 的参数和实现，考虑该函数需要处理哪些页面加载的情况</p>
+</blockquote>
+<ul>
+<li>判断虚拟地址是否页对齐，不对齐，则首先将虚拟地址所在页面的剩余二进制数据填入对应位置中</li>
+<li>接着以页对齐的方式，将剩余的二进制数据填入对应位置中</li>
+<li>倘若其在内存中还有冗余的位置，则为其分配相应的空间</li>
+</ul>
+<h3 id="Thinking-3-4"><a href="#Thinking-3-4" class="headerlink" title="Thinking 3.4"></a>Thinking 3.4</h3><blockquote>
+<p>思考上面这一段话，并根据自己在 Lab2 中的理解，回答：你认为这里的 env_tf.cp0_epc 存储的是物理地址还是虚拟地址?</p>
+</blockquote>
+<p>虚拟地址。不论是 C 语言，还是汇编语言，其所使用的地址都是虚拟地址。</p>
+<h3 id="Thinking-3-5"><a href="#Thinking-3-5" class="headerlink" title="Thinking 3.5"></a>Thinking 3.5</h3><blockquote>
+<p>试找出 0、 1、 2、 3 号异常处理函数的具体实现位置。 8 号异常（系统调用）涉及的 do_syscall() 函数将在 Lab4 中实现。</p>
+</blockquote>
+<ul>
+<li>0 号异常处理函数 <code>handle_int</code> 在 <code>genex.S</code> 中实现，lab3 只能处理时钟中断，最终跳转到 <code>sched.c</code> 中的 <code>schedule</code> 实现</li>
+<li>1 号异常处理函数 <code>handle_mod</code> 在 <code>genex.S</code> 中进行分发，跳转到 <code>tlbex.c</code> 中的 <code>do_tlb_mod</code> 函数实现</li>
+<li>2、3 号异常处理函数 <code>handle_tlb</code> 在 <code>genex.S</code> 中进行分发，跳转到 <code>tlbex.c</code> 中的 <code>tlb do_tlb_refill</code> 函数实现</li>
+</ul>
+<h3 id="Thinking-3-6"><a href="#Thinking-3-6" class="headerlink" title="Thinking 3.6"></a>Thinking 3.6</h3><blockquote>
+<p>阅读 entry.S、 genex.S 和 env_asm.S 这几个文件，并尝试说出时钟中断在哪些时候开启，在哪些时候关闭。</p>
+</blockquote>
+<p>当时钟中断发生后，进入 <code>entry.S</code> 中的 <code>exc_gen_entry</code> 函数进行处理，该函数首先调用 <code>stackframe.h</code> 中的 <code>SAVE_ALL</code> 来保存现场，然后关闭时钟中断，进行异常分发处理。在 <code>genex.S</code> 中通过 <code>handle_int</code> 处理时钟中断，跳转到 <code>sched.c</code> 中的 <code>schedule</code> 实现，在 <code>schedule</code> 最后调用 <code>env_run</code> 时，又调用了 <code>env_run</code> 函数。该函数最后调用了实现在 <code>env_asm.S</code> 中的 <code>env_pop_tf</code> 函数。<code>env_pop_tf</code> 又跳转到 <code>genex.S</code> 中的 <code>ret_from_exception</code> 函数，这个函数调用 <code>stackframe.h</code> 中的 <code>RESTORE_ALL</code> 来恢复现场，重新开启时钟中断。</p>
+<h3 id="Thinking-3-7"><a href="#Thinking-3-7" class="headerlink" title="Thinking 3.7"></a>Thinking 3.7</h3><blockquote>
+<p>阅读相关代码，思考操作系统是怎么根据时钟中断切换进程的。  </p>
+</blockquote>
+<p>类似 3.6，当发生时钟中断后，系统在 <code>sched.c</code> 中通过 <code>schedule</code> 调度进程，当满足一定条件时（详见 [Exercise 3.12](#Exercise 3.12)），则换下一个进程运行（可能仍然是当前进程）。</p>
+<h2 id="难点分析"><a href="#难点分析" class="headerlink" title="难点分析"></a>难点分析</h2><h3 id="Exercise-3-1"><a href="#Exercise-3-1" class="headerlink" title="Exercise 3.1"></a>Exercise 3.1</h3><h4 id="TAILQ-宏定义分析"><a href="#TAILQ-宏定义分析" class="headerlink" title="TAILQ 宏定义分析"></a>TAILQ 宏定义分析</h4><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">_TAILQ_HEAD(name, type, qual)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>定义一个双向尾队列，这个结构体的名称为 <strong>name</strong>，元素类型为 <strong>type</strong>，里面含有一个指向队列头元素的指针 <strong>tqh_first</strong> 和指向队列尾元素的下一个元素的指针的指针 <strong>tqh_last</strong>，<strong>qual</strong> 为限定符（ quality : const, volatile…）。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_HEAD(name, type)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>定义一个双向尾队列，这个结构体的名称为 <strong>name</strong>，元素类型为 <strong>type</strong>，里面含有一个指向队列头元素的指针 <strong>tqh_first</strong> 和指向队列尾元素的下一个元素的指针的指针 <strong>tqh_last</strong>。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_HEAD_INITIALIZER(head) </span><br></pre></td></tr></tbody></table></figure>
+
+<p>初始化双向尾队列 <strong>head</strong>（不是指针），将其 <strong>tqh_first</strong> 设置为 <strong>NULL</strong>，将其 <strong>tqh_last</strong> 设置为 <strong>tqh_first</strong> 的地址。给元素赋值时作为常量使用，注意与 <code>TAILQ_INIT(head)</code> 区分。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">_TAILQ_ENTRY(type, qual)  </span><br></pre></td></tr></tbody></table></figure>
+
+<p>定义双向尾队列元素的指针域，元素类型为 <strong>type</strong>，里面含有一个指向下一个元素地址的指针 <strong>tqe_next</strong>，一个指向前一个元素的下一个元素指针的指针 <strong>tqe_prev</strong>，<strong>qual</strong> 为限定符（ quality : const, volatile…）。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_ENTRY(type)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>定义双向尾队列元素的指针域，元素类型为 <strong>type</strong>，里面含有一个指向下一个元素地址的指针 <strong>tqe_next</strong>，一个指向前一个元素的下一个元素指针的指针 <strong>tqe_prev</strong>。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_INIT(head)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>初始化指针 <strong>head</strong> 指向的双向尾队列，将其 <strong>tqh_first</strong> 设置为 <strong>NULL</strong>，将其 <strong>tqh_last</strong> 设置为 <strong>tqh_first</strong> 的地址。初始化队列时作为宏函数使用，注意与 <code>TAILQ_HEAD_INITIALIZER(head) </code> 区分。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_INSERT_HEAD(head, elm, field)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>在指针 <strong>head</strong> 指向的双向尾队列中，将指针 <strong>elm</strong> 指向的元素插在队列头，<strong>field</strong> 为元素的指针域结构体名称。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_INSERT_TAIL(head, elm, field)  </span><br></pre></td></tr></tbody></table></figure>
+
+<p>在指针 <strong>head</strong> 指向的双向尾队列中，将指针 <strong>elm</strong> 指向的元素插在队列尾，<strong>field</strong> 为元素的指针域结构体名称。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_INSERT_AFTER(head, listelm, elm, field) </span><br></pre></td></tr></tbody></table></figure>
+
+<p>在指针 <strong>head</strong> 指向的双向尾队列中，将指针 <strong>elm</strong> 指向的元素插在指针 <strong>listElm</strong> 指向的元素后面，<strong>field</strong> 为元素的指针域结构体名称。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_INSERT_BEFORE(listelm, elm, field)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>将指针 <strong>elm</strong> 指向的元素插在指针 <strong>listElm</strong> 指向的元素前面，<strong>field</strong> 为元素的指针域结构体名称。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_REMOVE(head, elm, field)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>在指针 <strong>head</strong> 指向的双向尾队列中，将指针 <strong>elm</strong> 指向的元素从中移除，<strong>field</strong> 为元素的指针域结构体名称。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_FOREACH(var, head, field) </span><br></pre></td></tr></tbody></table></figure>
+
+<p>遍历指针 <strong>head</strong> 指向的双向尾队列，<strong>var</strong> 为已声明好的元素指针，供遍历时使用，<strong>field</strong> 为元素的指针域结构体名称。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_CONCAT(head1, head2, field)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>将指针 <strong>head2</strong> 指向的双向尾队列插入到指针 <strong>head1</strong> 指向的双向尾队列后面，并将指针 <strong>head2</strong> 指向的队列清空，<strong>field</strong> 为元素的指针域结构体名称。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_EMPTY(head) ((head)-&gt;tqh_first == <span class="literal">NULL</span>)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>判断指针 <strong>head</strong> 指向的双向尾队列是否为空。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_FIRST(head) ((head)-&gt;tqh_first)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>获得指针 <strong>head</strong> 指向的双向尾队列的第一个元素的指针。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TAILQ_NEXT(elm, field) ((elm)-&gt;field.tqe_next)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>获得双向尾队列中，<strong>elm</strong> 指向的元素的下一个元素的指针，<strong>field</strong> 为元素的指针域结构体名称。</p>
+<h4 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h4><ul>
+<li>初始化空闲进程列表、调度进程列表</li>
+<li>从 <code>envs[NENV-1]</code> 开始倒序将进程控制块插入空闲进程列表中。</li>
+</ul>
+<h3 id="Exercise-3-2"><a href="#Exercise-3-2" class="headerlink" title="Exercise 3.2"></a>Exercise 3.2</h3><p>利用 <code>page_insert</code> 函数，将从 va $\rightarrow$ va + i 的虚拟地址映射到 <code>pa</code> $\rightarrow$ pa + i，逐页将物理地址转化为页控制块指针，插入即可。</p>
+<h3 id="Exercise-3-3"><a href="#Exercise-3-3" class="headerlink" title="Exercise 3.3"></a>Exercise 3.3</h3><p>尝试分配一个页面作为进程的页目录，将页面的引用次数加一，同时设置到进程控制块中。</p>
+<h3 id="Exercise-3-4"><a href="#Exercise-3-4" class="headerlink" title="Exercise 3.4"></a>Exercise 3.4</h3><ul>
+<li>空闲进程列表为空，则返回错误值；不为空，则取出其中第一个进程控制块</li>
+<li>尝试初始化新进程的地址空间</li>
+<li>为新进程设置父进程的 id，并为自己获取 id，尝试分配命名空间</li>
+<li>从空闲进程列表中移除，赋值到传入指针指定的空间中</li>
+</ul>
+<h3 id="Exercise-3-5"><a href="#Exercise-3-5" class="headerlink" title="Exercise 3.5"></a>Exercise 3.5</h3><ul>
+<li>尝试分配页</li>
+<li>利用 <code>memcpy</code> 将 src 处开始长度为 len 字节的内容复制到页的起始处（<code>page2kva(p)</code>）加 <code>offset</code> 偏移量的位置上</li>
+</ul>
+<h3 id="Exercise-3-6"><a href="#Exercise-3-6" class="headerlink" title="Exercise 3.6"></a>Exercise 3.6</h3><p>将进程控制块中 env_tf 的 cp0_epc 设置为 elf 文件的入口地址，使得进程调度时可以从正确的位置开始执行</p>
+<h3 id="Exercise-3-7"><a href="#Exercise-3-7" class="headerlink" title="Exercise 3.7"></a>Exercise 3.7</h3><ul>
+<li>分配一个进程用于初始化，父进程 id 设置为 0，代表该进程为根节点的进程</li>
+<li>为该进程设置优先级，并将状态设置为可运行</li>
+<li>载入该进程执行所需的二进制数据，并将该进程插入到进程调度列表中</li>
+</ul>
+<h3 id="Exercise-3-8"><a href="#Exercise-3-8" class="headerlink" title="Exercise 3.8"></a>Exercise 3.8</h3><ul>
+<li>设置进程运行所需的页目录</li>
+<li>调用汇编函数恢复现场，指明该进程的 trapframe 地址和命名空间</li>
+</ul>
+<h3 id="Exercise-3-9"><a href="#Exercise-3-9" class="headerlink" title="Exercise 3.9"></a>Exercise 3.9</h3><ul>
+<li>从 <code>CP0_CAUSE</code> 中获取异常信息</li>
+<li>取其 <code>6:2</code> 位获得中断码</li>
+<li>根据中断码获取相应中断的处理地址</li>
+<li>跳转到相应位置处理中断</li>
+</ul>
+<h3 id="Exercise-3-10"><a href="#Exercise-3-10" class="headerlink" title="Exercise 3.10"></a>Exercise 3.10</h3><p>按照要求将 <code>.text.exc_gen_entry</code> 段和 <code>.text.tlb_miss_entry</code> 段  放到相应的地址空间即可</p>
+<h3 id="Exercise-3-11"><a href="#Exercise-3-11" class="headerlink" title="Exercise 3.11"></a>Exercise 3.11</h3><ul>
+<li>将计数器清零</li>
+<li>将 <code>CP0_COMPARE</code> 设置为预先确定的值</li>
+</ul>
+<h3 id="Exercise-3-12"><a href="#Exercise-3-12" class="headerlink" title="Exercise 3.12"></a>Exercise 3.12</h3><ul>
+<li>当前进程为空 或 时间片用完 或 当前进程不可运行 或 当前进程主动让出时间片时<ul>
+<li>如果当前进程不为空<ul>
+<li>把它从调度进程列表中移除</li>
+<li>如果当前进程可运行<ul>
+<li>重新添加到调度进程列表的尾部</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>判断调度进程列表是否为空并在为空时发出警告</li>
+<li>从调度进程列表中取出一个新的进程控制块</li>
+<li>设置时间片长度为该进程的优先级</li>
+</ul>
+</li>
+<li>该进程用掉一个时间片，时间片长度减一</li>
+<li>运行该进程</li>
+</ul>
+<h2 id="实验体会"><a href="#实验体会" class="headerlink" title="实验体会"></a>实验体会</h2><p>这次实验和上次实验一样，难点都不在于代码的补全，而在于整个进程调度的流程、中断处理的方式以及各个函数的调用关系的把控。实验代码中有大量令人困惑的缩写、难以理解的操作，尽管不影响补全，但往往既不知其然，也不知其所以然，<del>学了也跟没学一样</del>。指导书也只能提供极为有限的帮助。</p>
+<p>对此，只有顺着 mips_init 的调用逐层去尽可能的理解代码，在各个 C 文件、汇编文件、链接文件之间反复横跳，尽可能地去顿悟（<del>问 AI、看博客、做梦</del>）。毕竟，这次上机也告诉我们，不理解整个体系的代价就是不给提示就做不下去。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://foolish-han.github.io">Foolish-Han</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://foolish-han.github.io/2024/06/30/buaa-2024-os-lab3/">https://foolish-han.github.io/2024/06/30/buaa-2024-os-lab3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://foolish-han.github.io" target="_blank">人月神话</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/">进程管理</a></div><div class="post_share"><div class="social-share" data-image="/img/cover4.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2024/06/30/buaa-2024-os-lab2/" title="BUAA 2024 OS Lab2"><img class="cover" src="/img/cover1.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">BUAA 2024 OS Lab2</div></div></a></div><div class="next-post pull-right"><a href="/2024/06/30/buaa-2024-os-lab4/" title="BUAA 2024 OS Lab4"><img class="cover" src="/img/cover7.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">BUAA 2024 OS Lab4</div></div></a></div></nav><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div class="vcomment" id="vcomment"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Foolish-Han</div><div class="author-info__description">这是 Hry 的个人博客~</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">13</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">16</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/Foolish-Han"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content is-expand"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Lab-3-%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8A"><span class="toc-number">1.</span> <span class="toc-text">Lab 3 实验报告</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%9D%E8%80%83%E9%A2%98"><span class="toc-number">1.1.</span> <span class="toc-text">思考题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Thinking-3-1"><span class="toc-number">1.1.1.</span> <span class="toc-text">Thinking 3.1</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Thinking-3-2"><span class="toc-number">1.1.2.</span> <span class="toc-text">Thinking 3.2</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Thinking-3-3"><span class="toc-number">1.1.3.</span> <span class="toc-text">Thinking 3.3</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Thinking-3-4"><span class="toc-number">1.1.4.</span> <span class="toc-text">Thinking 3.4</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Thinking-3-5"><span class="toc-number">1.1.5.</span> <span class="toc-text">Thinking 3.5</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Thinking-3-6"><span class="toc-number">1.1.6.</span> <span class="toc-text">Thinking 3.6</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Thinking-3-7"><span class="toc-number">1.1.7.</span> <span class="toc-text">Thinking 3.7</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9A%BE%E7%82%B9%E5%88%86%E6%9E%90"><span class="toc-number">1.2.</span> <span class="toc-text">难点分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-1"><span class="toc-number">1.2.1.</span> <span class="toc-text">Exercise 3.1</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#TAILQ-%E5%AE%8F%E5%AE%9A%E4%B9%89%E5%88%86%E6%9E%90"><span class="toc-number">1.2.1.1.</span> <span class="toc-text">TAILQ 宏定义分析</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="toc-number">1.2.1.2.</span> <span class="toc-text">注意事项</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-2"><span class="toc-number">1.2.2.</span> <span class="toc-text">Exercise 3.2</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-3"><span class="toc-number">1.2.3.</span> <span class="toc-text">Exercise 3.3</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-4"><span class="toc-number">1.2.4.</span> <span class="toc-text">Exercise 3.4</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-5"><span class="toc-number">1.2.5.</span> <span class="toc-text">Exercise 3.5</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-6"><span class="toc-number">1.2.6.</span> <span class="toc-text">Exercise 3.6</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-7"><span class="toc-number">1.2.7.</span> <span class="toc-text">Exercise 3.7</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-8"><span class="toc-number">1.2.8.</span> <span class="toc-text">Exercise 3.8</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-9"><span class="toc-number">1.2.9.</span> <span class="toc-text">Exercise 3.9</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-10"><span class="toc-number">1.2.10.</span> <span class="toc-text">Exercise 3.10</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-11"><span class="toc-number">1.2.11.</span> <span class="toc-text">Exercise 3.11</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Exercise-3-12"><span class="toc-number">1.2.12.</span> <span class="toc-text">Exercise 3.12</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E9%AA%8C%E4%BD%93%E4%BC%9A"><span class="toc-number">1.3.</span> <span class="toc-text">实验体会</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2024/06/30/buaa-2024-os-challenge-shell/" title="BUAA 2024 OS challenge-shell"><img src="/img/cover1.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="BUAA 2024 OS challenge-shell"/></a><div class="content"><a class="title" href="/2024/06/30/buaa-2024-os-challenge-shell/" title="BUAA 2024 OS challenge-shell">BUAA 2024 OS challenge-shell</a><time datetime="2024-06-30T04:06:39.000Z" title="发表于 2024-06-30 12:06:39">2024-06-30</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/06/30/buaa-2024-os-lab6/" title="BUAA 2024 OS Lab6"><img src="/img/cover7.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="BUAA 2024 OS Lab6"/></a><div class="content"><a class="title" href="/2024/06/30/buaa-2024-os-lab6/" title="BUAA 2024 OS Lab6">BUAA 2024 OS Lab6</a><time datetime="2024-06-30T04:06:23.000Z" title="发表于 2024-06-30 12:06:23">2024-06-30</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/06/30/buaa-2024-os-lab5/" title="BUAA 2024 OS Lab5"><img src="/img/cover6.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="BUAA 2024 OS Lab5"/></a><div class="content"><a class="title" href="/2024/06/30/buaa-2024-os-lab5/" title="BUAA 2024 OS Lab5">BUAA 2024 OS Lab5</a><time datetime="2024-06-30T04:06:15.000Z" title="发表于 2024-06-30 12:06:15">2024-06-30</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/06/30/buaa-2024-os-lab4/" title="BUAA 2024 OS Lab4"><img src="/img/cover7.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="BUAA 2024 OS Lab4"/></a><div class="content"><a class="title" href="/2024/06/30/buaa-2024-os-lab4/" title="BUAA 2024 OS Lab4">BUAA 2024 OS Lab4</a><time datetime="2024-06-30T04:06:05.000Z" title="发表于 2024-06-30 12:06:05">2024-06-30</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2024/06/30/buaa-2024-os-lab3/" title="BUAA 2024 OS Lab3"><img src="/img/cover4.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="BUAA 2024 OS Lab3"/></a><div class="content"><a class="title" href="/2024/06/30/buaa-2024-os-lab3/" title="BUAA 2024 OS Lab3">BUAA 2024 OS Lab3</a><time datetime="2024-06-30T04:05:58.000Z" title="发表于 2024-06-30 12:05:58">2024-06-30</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('/img/cover4.png')"><div id="footer-wrap"><div class="copyright">&copy;2024 By Foolish-Han</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Hi, welcome to my <a target="_blank" rel="noopener" href="https://butterfly.js.org/">blog</a>!</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.13.0"></script><script src="/js/main.js?v=4.13.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page@5.2.0/instantpage.min.js" type="module"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"><script>(() => {
+  const initValine = () => {
+    const valine = new Valine(Object.assign({
+      el: '#vcomment',
+      appId: '3iO6JIA0cLyuYL0yjreVruMw-gzGzoHsz',
+      appKey: 'RArszBTZZW7BfrskN8hvJ9gO',
+      avatar: 'monsterid',
+      serverURLs: '',
+      emojiMaps: "",
+      path: window.location.pathname,
+      visitor: false
+    }, null))
+  }
+
+  const loadValine = async () => {
+    if (typeof Valine === 'function') initValine()
+    else {
+      await getScript('https://cdn.jsdelivr.net/npm/valine@1.5.1/dist/Valine.min.js')
+      initValine()
+    }
+  }
+
+  if ('Valine' === 'Valine' || !false) {
+    if (false) btf.loadComment(document.getElementById('vcomment'),loadValine)
+    else setTimeout(loadValine, 0)
+  } else {
+    window.loadOtherComment = loadValine
+  }
+})()</script></div><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = true;
+POWERMODE.mobile = true;
+document.body.addEventListener('input', POWERMODE);
+</script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
