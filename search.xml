@@ -1,6 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>leptjson 开发实践：测试驱动与安全编程启示</title>
+    <url>/2025/02/26/CPP/lept_json/</url>
+    <content><![CDATA[<blockquote>
+<p>一直觉得自己的代码水平处在<strong>纸上谈兵</strong>的层面，好像什么都学了又好像什么都干不了。为了成为一名不只是会<strong>面向作业编程</strong>的 Coder，于是决心学习开源项目，提高业务水平。于是，便从 <a class="link" href="https://github.com/miloyip/json-tutorial">json-tutorial<i class="fa-solid fa-arrow-up-right ml-[0.2em] font-light align-text-top text-[0.7em] link-icon"></i></a> 这一代码量仅在一千行的项目启程，开启打怪升级之路~</p>
+</blockquote>
+<h2 id="项目简介"><a href="#项目简介" class="headerlink" title="项目简介"></a>项目简介</h2><p>JSON 即 <strong>J</strong>ava<strong>S</strong>cript <strong>O</strong>bject <strong>N</strong>otation，是一种轻量级的文本数据交换格式。主要包括以下六种类型：</p>
+<ul>
+<li>数字（整数或浮点数）</li>
+<li>字符串（在双引号中）</li>
+<li>逻辑值（true 或 false）</li>
+<li>数组（在中括号中）</li>
+<li>对象（在大括号中）</li>
+<li>null</li>
+</ul>
+<p>leptjson 项目旨在使用 C 语言完成一批库函数，能够对 JSON 文本进行解析并以一定的数据结构存储起来，同时能够使用该数据结构进行 JSON 的生成、修改与输出。</p>
+<h2 id="TDD"><a href="#TDD" class="headerlink" title="TDD"></a>TDD</h2><p>本次项目中，给我印象最深刻的当属测试驱动开发的方法论。</p>
+<blockquote>
+<p><strong>Test Driven Development (TDD)</strong> is a software development methodology that emphasizes writing <strong>tests before writing the actual code</strong>. It ensures that code is always tested and functional, reducing bugs and improving code quality. In TDD, developers write <strong>small, focused tests</strong> that define the desired functionality, then write the minimum code necessary to pass these tests, and finally, refactor the code to improve structure and performance.</p>
+</blockquote>
+<p><figure class="image-caption"><img lazyload="" src="/images/loading.svg" data-src="https://foolish-han.oss-cn-beijing.aliyuncs.com/img/Test-Driven-Dev.webp" alt="Test-Driven-Devlopment"><figcaption>Test-Driven-Devlopment</figcaption></figure></p>
+<p>尽管以前的 OO 课程非常强调测试，甚至有一整个单元都围绕单元测试展开，但由于当时的测试仅仅面向一个功能，同时也因为有官方的评测机为我们兜底，实际上对于测试的价值并没有过多的体会，是为了测试而测试。</p>
+<p>在本项目中，在每实现一个库函数之间，都要首先编写测试程序来对函数的正确性进行约束，然后再去实现函数使得其能够通过测试，这样做的好处是显而易见的。</p>
+<p>一方面，测试程序为我们明确了目标和方向，使得我们能够聚焦在一个规模较小的具体问题上，<strong>直击要害</strong>。我们的开发过程会轻松许多，每通过一个测试点便会有一分成就，不会因为要“一口吃下大胖子”望而生畏。</p>
+<p>另一方面，由于有测试程序为我们“<strong>兜底</strong>”，我们可以大胆地进行重构、调优、扩展。在实现新功能的过程中，可以同时对原有功能进行测试，能够及时地发现新代码与旧代码冲突的地方，将问题的发现时机大大提前。</p>
+<p>当然，编写测试程序可能是一件比较烦琐的事情。在本项目中，测试程序与功能程序达到了同一个体量，只多不少。但由于软件的测试本身就是必要的，漫无目的 debug 的代价更高，编写测试程序实际上是一件性价比很高的事。</p>
+<p>人在持续地进行重复性的、注重细节的工作中是很容易犯错的，TDD 则正合人性。</p>
+<h2 id="安全开发"><a href="#安全开发" class="headerlink" title="安全开发"></a>安全开发</h2><p>说实话，我以前写的代码没有任何安全性可言，仅仅停留在能跑通评测的层面。对于错误处理、内存分配的问题，纯粹是采用<strong>鸵鸟算法</strong>了。安全性是什么呢？在本次的项目开发中，我认为应当是一套行之有效的使用<strong>规范</strong>。</p>
+<p>在本项目中，显而易见的是函数开头大量的 <code>assert</code> 语句，由此保证参数满足基本的规范（指针不是空指针、对象类型符合要求、数字大小符合约束……）。这些语句本质上是为程序员本身写的，提醒程序员以合法的方式调用这些函数。人是很健忘的，不可能时刻记住每一段代码的意图，我们必须在实现之初把这些要求形式化地规定出来，由此降低后续犯错的可能性。</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">lept_remove_object_value</span><span class="params">(lept_value *v, <span class="type">size_t</span> index)</span> {</span><br><span class="line">  assert(v != <span class="literal">NULL</span> &amp;&amp; v-&gt;type == LEPT_OBJECT &amp;&amp; index &lt; v-&gt;u.o.size);</span><br><span class="line">  lept_free(&amp;v-&gt;u.o.m[index].v);</span><br><span class="line">  <span class="built_in">free</span>(v-&gt;u.o.m[index].k);</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">size_t</span> i = index + <span class="number">1</span>; i &lt; v-&gt;u.a.size; i++) {</span><br><span class="line">    v-&gt;u.o.m[i - <span class="number">1</span>] = v-&gt;u.o.m[i];</span><br><span class="line">  }</span><br><span class="line">  v-&gt;u.o.size -= <span class="number">1</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
+
+
+
+<p>众所周知的是，C 语言是一种内存不安全的语言，但长期以来，我并没有意识到这一点。既是因为在设计代码时，从来没有这方面的考量，也是因为以往的内存泄露还没有累积到内存不够用的层面，从而产生明显的问题。在本次的开发中，由于使用了 <a class="link" href="https://valgrind.org/">valgrind<i class="fa-solid fa-arrow-up-right ml-[0.2em] font-light align-text-top text-[0.7em] link-icon"></i></a> 工具进行内存监控，我才始觉背后发凉，感受到内存分配与释放这一需要重视的问题。</p>
+<p>以 <code>lept_value</code> 结构体为例，它的生命周期可能很“长”，跨越了很多函数。可能一个结构体本身就是动态内存分配的产物，而其成员指针又指向了一块动态分配的内存，这使得内存分配具有了一定的“递归属性”。此外，由于分配与释放的分离、指针变量的赋值，“所有权”会发生转移，内存的追踪和控制变得相当难以琢磨。因此，我们必须建立一套严格的规范，初始化、释放、重新分配的时机都应当有明确的约束。</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">lept_value</span> {</span></span><br><span class="line">  <span class="class"><span class="keyword">union</span> {</span></span><br><span class="line">    <span class="comment">/* number */</span></span><br><span class="line">    <span class="type">double</span> n;</span><br><span class="line">    <span class="comment">/* object: members, member count, capacity */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> {</span></span><br><span class="line">      lept_member *m;</span><br><span class="line">      <span class="type">size_t</span> size;</span><br><span class="line">      <span class="type">size_t</span> capacity;</span><br><span class="line">    } o;</span><br><span class="line">    <span class="comment">/* array: elements, element count, capacity */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> {</span></span><br><span class="line">      lept_value *e;</span><br><span class="line">      <span class="type">size_t</span> size;</span><br><span class="line">      <span class="type">size_t</span> capacity;</span><br><span class="line">    } a;</span><br><span class="line">    <span class="comment">/* string: null-terminated string, string length */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> {</span></span><br><span class="line">      <span class="type">char</span> *s;</span><br><span class="line">      <span class="type">size_t</span> len;</span><br><span class="line">    } s;</span><br><span class="line">  } u;</span><br><span class="line">  lept_type type;</span><br><span class="line">};</span><br></pre></td></tr></table></figure></div>
+
+
+
+<p>例如，这里在每创建一个结构体时，都首先需要通过 <code>lept_init</code> 进行初始化，避免使用未经初始化的成员造成的潜在问题。而当使用完毕后，都应当调用 <code>lept_free</code> 进行释放。这种定制化的封装，是安全性的基本保障。</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">test_parse_false</span><span class="params">()</span> {</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"test_parse_false:\n"</span>);</span><br><span class="line">  lept_value v;</span><br><span class="line">  lept_init(&amp;v);</span><br><span class="line">  lept_set_boolean(&amp;v, <span class="number">1</span>);</span><br><span class="line">  EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&amp;v, <span class="string">"false"</span>));</span><br><span class="line">  EXPECT_EQ_INT(LEPT_FALSE, lept_get_type(&amp;v));</span><br><span class="line">  lept_free(&amp;v);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> lept_init(v)                                                           \</span></span><br><span class="line"><span class="meta">  do {                                                                         \</span></span><br><span class="line"><span class="meta">    (v)-&gt;type = LEPT_NULL;                                                     \</span></span><br><span class="line"><span class="meta">  } while (0)</span></span><br><span class="line">  </span><br><span class="line"><span class="type">void</span> <span class="title function_">lept_free</span><span class="params">(lept_value *v)</span> {</span><br><span class="line">  <span class="type">size_t</span> i;</span><br><span class="line">  assert(v != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="keyword">switch</span> (v-&gt;type) {</span><br><span class="line">  <span class="keyword">case</span> LEPT_STRING:</span><br><span class="line">    <span class="built_in">free</span>(v-&gt;u.s.s);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  <span class="keyword">case</span> LEPT_ARRAY:</span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; v-&gt;u.a.size; i++) {</span><br><span class="line">      lept_free(&amp;v-&gt;u.a.e[i]);</span><br><span class="line">    }</span><br><span class="line">    <span class="built_in">free</span>(v-&gt;u.a.e);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  <span class="keyword">case</span> LEPT_OBJECT:</span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; v-&gt;u.o.size; i++) {</span><br><span class="line">      lept_free(&amp;v-&gt;u.o.m[i].v);</span><br><span class="line">      <span class="built_in">free</span>(v-&gt;u.o.m[i].k);</span><br><span class="line">    }</span><br><span class="line">    <span class="built_in">free</span>(v-&gt;u.o.m);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  <span class="keyword">default</span>:</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  }</span><br><span class="line">  v-&gt;type = LEPT_NULL;</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
+
+
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>写代码是个艺术活，可以天马行空地创造，但必须戴着镣铐起舞。同这世间大多数事情一样，必须养成良好的习惯，形成有效的规范，才能从幼稚走向成熟。</p>
+]]></content>
+      <categories>
+        <category>C</category>
+      </categories>
+      <tags>
+        <tag>JSON</tag>
+        <tag>TDD</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>蓝桥杯学习笔记（一）</title>
     <url>/2025/02/02/LanQiaoCup/lan_qiao_cup_14th_A/</url>
     <content><![CDATA[<blockquote>
@@ -205,60 +259,6 @@
       </categories>
       <tags>
         <tag>UML</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>leptjson 开发实践：测试驱动与安全编程启示</title>
-    <url>/2025/02/26/CPP/lept_json/</url>
-    <content><![CDATA[<blockquote>
-<p>一直觉得自己的代码水平处在<strong>纸上谈兵</strong>的层面，好像什么都学了又好像什么都干不了。为了成为一名不只是会<strong>面向作业编程</strong>的 Coder，于是决心学习开源项目，提高业务水平。于是，便从 <a class="link" href="https://github.com/miloyip/json-tutorial">json-tutorial<i class="fa-solid fa-arrow-up-right ml-[0.2em] font-light align-text-top text-[0.7em] link-icon"></i></a> 这一代码量仅在一千行的项目启程，开启打怪升级之路~</p>
-</blockquote>
-<h2 id="项目简介"><a href="#项目简介" class="headerlink" title="项目简介"></a>项目简介</h2><p>JSON 即 <strong>J</strong>ava<strong>S</strong>cript <strong>O</strong>bject <strong>N</strong>otation，是一种轻量级的文本数据交换格式。主要包括以下六种类型：</p>
-<ul>
-<li>数字（整数或浮点数）</li>
-<li>字符串（在双引号中）</li>
-<li>逻辑值（true 或 false）</li>
-<li>数组（在中括号中）</li>
-<li>对象（在大括号中）</li>
-<li>null</li>
-</ul>
-<p>leptjson 项目旨在使用 C 语言完成一批库函数，能够对 JSON 文本进行解析并以一定的数据结构存储起来，同时能够使用该数据结构进行 JSON 的生成、修改与输出。</p>
-<h2 id="TDD"><a href="#TDD" class="headerlink" title="TDD"></a>TDD</h2><p>本次项目中，给我印象最深刻的当属测试驱动开发的方法论。</p>
-<blockquote>
-<p><strong>Test Driven Development (TDD)</strong> is a software development methodology that emphasizes writing <strong>tests before writing the actual code</strong>. It ensures that code is always tested and functional, reducing bugs and improving code quality. In TDD, developers write <strong>small, focused tests</strong> that define the desired functionality, then write the minimum code necessary to pass these tests, and finally, refactor the code to improve structure and performance.</p>
-</blockquote>
-<p><figure class="image-caption"><img lazyload="" src="/images/loading.svg" data-src="https://foolish-han.oss-cn-beijing.aliyuncs.com/img/Test-Driven-Dev.webp" alt="Test-Driven-Devlopment"><figcaption>Test-Driven-Devlopment</figcaption></figure></p>
-<p>尽管以前的 OO 课程非常强调测试，甚至有一整个单元都围绕单元测试展开，但由于当时的测试仅仅面向一个功能，同时也因为有官方的评测机为我们兜底，实际上对于测试的价值并没有过多的体会，是为了测试而测试。</p>
-<p>在本项目中，在每实现一个库函数之间，都要首先编写测试程序来对函数的正确性进行约束，然后再去实现函数使得其能够通过测试，这样做的好处是显而易见的。</p>
-<p>一方面，测试程序为我们明确了目标和方向，使得我们能够聚焦在一个规模较小的具体问题上，<strong>直击要害</strong>。我们的开发过程会轻松许多，每通过一个测试点便会有一分成就，不会因为要“一口吃下大胖子”望而生畏。</p>
-<p>另一方面，由于有测试程序为我们“<strong>兜底</strong>”，我们可以大胆地进行重构、调优、扩展。在实现新功能的过程中，可以同时对原有功能进行测试，能够及时地发现新代码与旧代码冲突的地方，将问题的发现时机大大提前。</p>
-<p>当然，编写测试程序可能是一件比较烦琐的事情。在本项目中，测试程序与功能程序达到了同一个体量，只多不少。但由于软件的测试本身就是必要的，漫无目的 debug 的代价更高，编写测试程序实际上是一件性价比很高的事。</p>
-<p>人在持续地进行重复性的、注重细节的工作中是很容易犯错的，TDD 则正合人性。</p>
-<h2 id="安全开发"><a href="#安全开发" class="headerlink" title="安全开发"></a>安全开发</h2><p>说实话，我以前写的代码没有任何安全性可言，仅仅停留在能跑通评测的层面。对于错误处理、内存分配的问题，纯粹是采用<strong>鸵鸟算法</strong>了。安全性是什么呢？在本次的项目开发中，我认为应当是一套行之有效的使用<strong>规范</strong>。</p>
-<p>在本项目中，显而易见的是函数开头大量的 <code>assert</code> 语句，由此保证参数满足基本的规范（指针不是空指针、对象类型符合要求、数字大小符合约束……）。这些语句本质上是为程序员本身写的，提醒程序员以合法的方式调用这些函数。人是很健忘的，不可能时刻记住每一段代码的意图，我们必须在实现之初把这些要求形式化地规定出来，由此降低后续犯错的可能性。</p>
-<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">lept_remove_object_value</span><span class="params">(lept_value *v, <span class="type">size_t</span> index)</span> {</span><br><span class="line">  assert(v != <span class="literal">NULL</span> &amp;&amp; v-&gt;type == LEPT_OBJECT &amp;&amp; index &lt; v-&gt;u.o.size);</span><br><span class="line">  lept_free(&amp;v-&gt;u.o.m[index].v);</span><br><span class="line">  <span class="built_in">free</span>(v-&gt;u.o.m[index].k);</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">size_t</span> i = index + <span class="number">1</span>; i &lt; v-&gt;u.a.size; i++) {</span><br><span class="line">    v-&gt;u.o.m[i - <span class="number">1</span>] = v-&gt;u.o.m[i];</span><br><span class="line">  }</span><br><span class="line">  v-&gt;u.o.size -= <span class="number">1</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
-
-
-
-<p>众所周知的是，C 语言是一种内存不安全的语言，但长期以来，我并没有意识到这一点。既是因为在设计代码时，从来没有这方面的考量，也是因为以往的内存泄露还没有累积到内存不够用的层面，从而产生明显的问题。在本次的开发中，由于使用了 <a class="link" href="https://valgrind.org/">valgrind<i class="fa-solid fa-arrow-up-right ml-[0.2em] font-light align-text-top text-[0.7em] link-icon"></i></a> 工具进行内存监控，我才始觉背后发凉，感受到内存分配与释放这一需要重视的问题。</p>
-<p>以 <code>lept_value</code> 结构体为例，它的生命周期可能很“长”，跨越了很多函数。可能一个结构体本身就是动态内存分配的产物，而其成员指针又指向了一块动态分配的内存，这使得内存分配具有了一定的“递归属性”。此外，由于分配与释放的分离、指针变量的赋值，“所有权”会发生转移，内存的追踪和控制变得相当难以琢磨。因此，我们必须建立一套严格的规范，初始化、释放、重新分配的时机都应当有明确的约束。</p>
-<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">lept_value</span> {</span></span><br><span class="line">  <span class="class"><span class="keyword">union</span> {</span></span><br><span class="line">    <span class="comment">/* number */</span></span><br><span class="line">    <span class="type">double</span> n;</span><br><span class="line">    <span class="comment">/* object: members, member count, capacity */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> {</span></span><br><span class="line">      lept_member *m;</span><br><span class="line">      <span class="type">size_t</span> size;</span><br><span class="line">      <span class="type">size_t</span> capacity;</span><br><span class="line">    } o;</span><br><span class="line">    <span class="comment">/* array: elements, element count, capacity */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> {</span></span><br><span class="line">      lept_value *e;</span><br><span class="line">      <span class="type">size_t</span> size;</span><br><span class="line">      <span class="type">size_t</span> capacity;</span><br><span class="line">    } a;</span><br><span class="line">    <span class="comment">/* string: null-terminated string, string length */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> {</span></span><br><span class="line">      <span class="type">char</span> *s;</span><br><span class="line">      <span class="type">size_t</span> len;</span><br><span class="line">    } s;</span><br><span class="line">  } u;</span><br><span class="line">  lept_type type;</span><br><span class="line">};</span><br></pre></td></tr></table></figure></div>
-
-
-
-<p>例如，这里在每创建一个结构体时，都首先需要通过 <code>lept_init</code> 进行初始化，避免使用未经初始化的成员造成的潜在问题。而当使用完毕后，都应当调用 <code>lept_free</code> 进行释放。这种定制化的封装，是安全性的基本保障。</p>
-<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">test_parse_false</span><span class="params">()</span> {</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">"test_parse_false:\n"</span>);</span><br><span class="line">  lept_value v;</span><br><span class="line">  lept_init(&amp;v);</span><br><span class="line">  lept_set_boolean(&amp;v, <span class="number">1</span>);</span><br><span class="line">  EXPECT_EQ_INT(LEPT_PARSE_OK, lept_parse(&amp;v, <span class="string">"false"</span>));</span><br><span class="line">  EXPECT_EQ_INT(LEPT_FALSE, lept_get_type(&amp;v));</span><br><span class="line">  lept_free(&amp;v);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> lept_init(v)                                                           \</span></span><br><span class="line"><span class="meta">  do {                                                                         \</span></span><br><span class="line"><span class="meta">    (v)-&gt;type = LEPT_NULL;                                                     \</span></span><br><span class="line"><span class="meta">  } while (0)</span></span><br><span class="line">  </span><br><span class="line"><span class="type">void</span> <span class="title function_">lept_free</span><span class="params">(lept_value *v)</span> {</span><br><span class="line">  <span class="type">size_t</span> i;</span><br><span class="line">  assert(v != <span class="literal">NULL</span>);</span><br><span class="line">  <span class="keyword">switch</span> (v-&gt;type) {</span><br><span class="line">  <span class="keyword">case</span> LEPT_STRING:</span><br><span class="line">    <span class="built_in">free</span>(v-&gt;u.s.s);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  <span class="keyword">case</span> LEPT_ARRAY:</span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; v-&gt;u.a.size; i++) {</span><br><span class="line">      lept_free(&amp;v-&gt;u.a.e[i]);</span><br><span class="line">    }</span><br><span class="line">    <span class="built_in">free</span>(v-&gt;u.a.e);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  <span class="keyword">case</span> LEPT_OBJECT:</span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; v-&gt;u.o.size; i++) {</span><br><span class="line">      lept_free(&amp;v-&gt;u.o.m[i].v);</span><br><span class="line">      <span class="built_in">free</span>(v-&gt;u.o.m[i].k);</span><br><span class="line">    }</span><br><span class="line">    <span class="built_in">free</span>(v-&gt;u.o.m);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  <span class="keyword">default</span>:</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  }</span><br><span class="line">  v-&gt;type = LEPT_NULL;</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
-
-
-
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>写代码是个艺术活，可以天马行空地创造，但必须戴着镣铐起舞。同这世间大多数事情一样，必须养成良好的习惯，形成有效的规范，才能从幼稚走向成熟。</p>
-]]></content>
-      <categories>
-        <category>C</category>
-      </categories>
-      <tags>
-        <tag>JSON</tag>
-        <tag>TDD</tag>
       </tags>
   </entry>
   <entry>
@@ -606,68 +606,6 @@
       </tags>
   </entry>
   <entry>
-    <title>社交网络</title>
-    <url>/2025/02/22/OO/BUAA%20OO%20Unit%203/</url>
-    <content><![CDATA[<h1 id="BUAA-OO-Unit-3"><a href="#BUAA-OO-Unit-3" class="headerlink" title="BUAA OO Unit 3"></a>BUAA OO Unit 3</h1><h2 id="Unit-3-概览"><a href="#Unit-3-概览" class="headerlink" title="Unit 3 概览"></a>Unit 3 概览</h2><p>第三单元的核心内容是 <strong>JML</strong>（java modeling language）规格的理解与运用，以 <strong>社交网络</strong> 的模拟为核心任务。</p>
-<h3 id="为什么要引入-JML-规格"><a href="#为什么要引入-JML-规格" class="headerlink" title="为什么要引入 JML 规格"></a>为什么要引入 JML 规格</h3><p>我们知道，要理解一个函数的作用，最有效的方法就是直接 <strong>读源码</strong> ，可以帮助我们直入函数的底层逻辑，了解它的来龙去脉；但是这样的效率十分低下，而且我相信对于程序员来说阅读别人的代码一定是一件令人头疼的事。于是，我们开始 <strong>写注释</strong> ，来简明地说明这个函数的作用，帮助使用者快速地理解；但这样往往容易出现理解的偏差，因为函数的注释很可能不够全面，而且自然语言容易产生歧义。</p>
-<p>特别是在大型项目的开发中，自己写的函数可能过了一会儿就忘了是干什么的，那就更遑论合作开发了……为了克服上述两种方式的弊端，也为了吸纳上述两种方式的优点，我们在 <strong>准确性</strong> 和 <strong>高效性</strong> 之间做了 <strong>trade-off</strong>，就产生了 JML。</p>
-<h3 id="什么是-JML-规格"><a href="#什么是-JML-规格" class="headerlink" title="什么是 JML 规格"></a>什么是 JML 规格</h3><p>简单来说，JML 规格就是 <strong>标准化的注释</strong>。首先，它是一种注释，对于程序的正确运行不会产生任何影响；其次，它又是标准化的，没有二义性，任何人读了都只会产生一种理解。JML 规格以一种类似 Java 语言本身的语法，规定了调用者需要保证的东西、函数的效果和可能产生的副作用、返回值的特点等方面的内容，使得我们可以 <strong>更安全</strong>、<strong>更高效</strong> 地进行程序设计和项目开发。</p>
-<h2 id="测试过程"><a href="#测试过程" class="headerlink" title="测试过程"></a>测试过程</h2><p>由于本单元是基于 <strong>JML</strong> 规格进行开发，整个架构设计相对固定严谨，只要严格按照规格去设计，出错的可能性很小。因此，我在本单元所做的测试相对较少，主要是集中在部分方法上采用 <strong>JUnit</strong> 进行单元测试，通过对 <strong>JML</strong> 规格的直接“翻译”来检验程序设计的正确性。此外，由于本单元的输出固定，我也采用了黑箱测试的方法与同学对拍，以此进一步验证正确性。</p>
-<h3 id="黑箱测试与白箱测试"><a href="#黑箱测试与白箱测试" class="headerlink" title="黑箱测试与白箱测试"></a>黑箱测试与白箱测试</h3><h4 id="黑箱测试"><a href="#黑箱测试" class="headerlink" title="黑箱测试"></a>黑箱测试</h4><p>黑箱测试即屏蔽了具体的实现细节，仅通过 <strong>输入输出</strong> 来检验程序的正确性。</p>
-<p>优点是 <strong>实现简单</strong>，不需要关注程序内部的代码实现，只要简单地完成数据生成与输出检验即可；<strong>贴近用户</strong>，测试的过程实际上就是模拟用户体验软件功能的过程。</p>
-<p>缺点是 <strong>覆盖率较低</strong>，生成的数据往往具有局限性，难以覆盖到各种各样的边界条件；<strong>难以定位错误</strong>，当产生错误后往往仅能从结果倒推问题，模拟程序运行去发现问题。</p>
-<h4 id="白箱测试"><a href="#白箱测试" class="headerlink" title="白箱测试"></a>白箱测试</h4><p>白箱测试即在明确程序具体实现的情况下，对 <strong>程序结构</strong> 本身的正确性进行测试。</p>
-<p>优点是 <strong>直击问题</strong>，通过对程序本身的逻辑进行检查，能够直接定位问题点；<strong>覆盖率高</strong>，能够精准把握程序运行的各条路径，发现潜在的问题。</p>
-<p>缺点是 <strong>实现困难</strong>，往往只有开发者自身可能洞悉程序的结构，且只有设计极其详尽的测试才能覆盖更多的分支；<strong>设计与功能脱节</strong>，白箱测试往往只能检验程序自身逻辑的正确性，而无法衡量其是否满足功能要求。</p>
-<h3 id="单元测试、集成测试、功能测试、压力测试、回归测试"><a href="#单元测试、集成测试、功能测试、压力测试、回归测试" class="headerlink" title="单元测试、集成测试、功能测试、压力测试、回归测试"></a>单元测试、集成测试、功能测试、压力测试、回归测试</h3><h4 id="单元测试"><a href="#单元测试" class="headerlink" title="单元测试"></a>单元测试</h4><p>单元测试即针对程序设计的某一 <strong>基本组成单元</strong>（类的方法、函数）进行测试。</p>
-<p>特点是能够直接检验最小模块在业务逻辑上的正确性，快速定位问题。但实现起来比较复杂，需要对具体的模块有针对性的设计测试方案。</p>
-<p>我们本单元要求针对某一方法进行的测试就是单元测试。</p>
-<h4 id="集成测试"><a href="#集成测试" class="headerlink" title="集成测试"></a>集成测试</h4><p>集成测试即在单元测试的基础上，将 <strong>模块组装成系统</strong> 进行测试。</p>
-<p>特点是能够检验不同模块之间的协调性，针对模块接口以及整个体系结构，发现程序在局部上反映不出来，但在全局上就会暴露出来的问题。但实现开销较大，需要在做足单元测试的基础上进行设计。</p>
-<p>我们本单元进行单元测试时，保证了其他方法的正确实现，同时提供了 <code>stricEquals</code>、<code>getPersons</code> 等方法来辅助我们进行测试，实际上也是集成测试的体现。</p>
-<h4 id="功能测试"><a href="#功能测试" class="headerlink" title="功能测试"></a>功能测试</h4><p>功能测试即检验软件系统是否正确实现 <strong>功能要求</strong> 的测试。</p>
-<p>特点是通常采用黑箱测试的方法，检验业务逻辑是否正确实现，能否满足客户需求。</p>
-<p>我们本单元检验 <code>qtvs</code>、<code>qbs</code> 等指令的输出是否正确，实际上就是功能测试</p>
-<h4 id="压力测试"><a href="#压力测试" class="headerlink" title="压力测试"></a>压力测试</h4><p>压力测试即对系统施加 <strong>大量负载</strong>（线程、输入、用户、流量）的测试。</p>
-<p>特点是检验系统的性能瓶颈和鲁棒性。</p>
-<p>我们本单元第二次作业中，最后一个强测点中有大量的 <code>qtvs 114514 1919810</code> ，就是通过压力测试来检验我们程序的性能是否合乎 10s CPU 时间的要求。</p>
-<h4 id="回归测试"><a href="#回归测试" class="headerlink" title="回归测试"></a>回归测试</h4><p>回归测试即在软件改动后（升级、打补丁）<strong>重新测试</strong> 先前测试过的内容。</p>
-<p>特点是保证不会引入新的错误，导致回归（退化），但在测试内容较多的情况下可能时间、人力成本较高。</p>
-<p>我们在进行 bug 修复时，要求保证本来已经正确的内容不得出错、代码风格分不得降低才能提交，这实际上就是回归测试。</p>
-<h3 id="数据构造策略"><a href="#数据构造策略" class="headerlink" title="数据构造策略"></a>数据构造策略</h3><p>从本单元的具体内容来看，构造数据时应该考虑三方面的内容。</p>
-<p>一是考虑 <strong>数据的范围</strong>。比如 <strong>id</strong> 在 <strong>int</strong> 范围内，我们就要考虑 <strong>int</strong> 范围的边界，构造对应的测试数据。</p>
-<p>二是考虑 <strong>图的特征</strong>。本单元的功能实现很多都是图的内容，我们就需要考虑稀疏图、稠密图、连通图、非连通图等具有不同结构特征的图进行测试。</p>
-<p>三是考虑 <strong>压力测试</strong>。本单元的许多指令如 <code>qbs</code>、<code>qcs</code> 等直观看起来都有较高的复杂度，我们需要大量构造这类数据来检验程序是否在性能上做出良好的处理。</p>
-<h2 id="架构设计"><a href="#架构设计" class="headerlink" title="架构设计"></a>架构设计</h2><p><strong>JML</strong> 规格实际上为本单元设计了良好的架构。<code>Tag</code> 、<code>Message</code> 、<code>Person</code>  作为底层类，实现最基本的功能。<code>NetWork</code> 作为顶层类，统一管理调度这些类，实现用户功能。</p>
-<h3 id="图模型构建"><a href="#图模型构建" class="headerlink" title="图模型构建"></a>图模型构建</h3><p>本单元的图模型是 <strong>以点为核心</strong> 进行构建。<code>Person</code> 类作为一个个节点，其内存放有与其相连的所有节点，进而构成了边的概念。<code>NetWork</code> 中存放了社交网络中的所有人，由此构成了图的概念。</p>
-<h3 id="图模型维护"><a href="#图模型维护" class="headerlink" title="图模型维护"></a>图模型维护</h3><p>对于找点的操作，由于采取了 <code>HashMap</code> 的容器，直接通过 <code>id</code> 映射到对应的值即可。</p>
-<p>对于加边、删边的操作，只需在对应的两个 <code>Person</code> 对象中加上或删去对方的引用即可。</p>
-<p>对于修改边的权重的操作，只需在对应的两个 <code>Person</code> 对象中修改其对应位置的 <code>value</code> 值即可。</p>
-<p>对于遍历操作，只需深度或广度遍历每个<code>Person</code> 对象即可。</p>
-<h2 id="性能问题及其修复"><a href="#性能问题及其修复" class="headerlink" title="性能问题及其修复"></a>性能问题及其修复</h2><h3 id="图的深度优先遍历"><a href="#图的深度优先遍历" class="headerlink" title="图的深度优先遍历"></a>图的深度优先遍历</h3><p>在最初写的时候，我认为在图的规模十分庞大的情况，采取递归的写法可能存在爆栈的风险（事实证明是我多虑了），于是采用栈的结构模拟深度优先遍历的过程。但是我在使用 <code>isVisited</code> 容器记录访问过的节点时，错误地认为 <strong>只有完成指定操作的节点才算被访问</strong>，导致已经在栈中的节点被频繁加入栈中，进行了大量空循环的操作导致超时。而事实上，<code>isVisited</code> 中记录的应该是 <strong>已经进入（过）栈中的节点</strong>。一个比较合理的写法如下：</p>
-<div class="code-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">dfs</span><span class="params">(<span class="type">int</span> node, CallBack callBack)</span> {</span><br><span class="line">    Stack&lt;Integer&gt; stack = <span class="keyword">new</span> <span class="title class_">Stack</span>&lt;&gt;();</span><br><span class="line">    HashSet&lt;Integer&gt; isVisited = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line">    stack.push(node);</span><br><span class="line">    isVisited.add(node);</span><br><span class="line">    <span class="keyword">while</span> (!stack.isEmpty()) {</span><br><span class="line">        <span class="type">int</span> <span class="variable">now</span> <span class="operator">=</span> stack.pop();</span><br><span class="line">        callBack.operateNode(now);</span><br><span class="line">        HashSet&lt;Integer&gt; otherNodes = nodeToSet.get(now);</span><br><span class="line">        <span class="keyword">for</span> (Integer otherNode : otherNodes) {</span><br><span class="line">            <span class="keyword">if</span> (!isVisited.contains(otherNode)) {</span><br><span class="line">                stack.push(otherNode);</span><br><span class="line">                isVisited.add(otherNode);</span><br><span class="line">            }</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
-
-<h3 id="qtvs-指令"><a href="#qtvs-指令" class="headerlink" title="qtvs 指令"></a>qtvs 指令</h3><p>这个指令用于查询一个 <code>Tag</code> 内所有 <code>Person</code> 之间的 <code>value</code> 总和。在最初写的时候，我经过简单的计算认为，在 10000 条指令内，采取朴素的双层循环遍历的方法 CPU 时间不会超过 10s。但实际上我的复杂度计算方式 <strong>忽略了幂函数前面的系数</strong>，这在数量级相当的情况下是极有可能超时的（而且评测环境并不足够理想），于是我就顺理成章的超时了。<strong>痛定思痛</strong>，我就抛弃了一切偷懒的幻想，采取 <strong>动态维护</strong> 的方式来维护 <code>valueSum</code> ，其核心就是当任意两个 <code>Person</code> 之间的 <code>value</code> 变化时（或大小变化，或从无到有，或从有到无），应当 <strong>对同时包含这两个 Person 的所有 Tag 进行维护</strong> 。因为一个 <code>Person</code> 对象的 <code>Tag</code> 里含有的 <code>Person</code> 一定时这个对象自身的熟人，所以我们在找 <code>Tag</code> 时只需遍历被修改关系的 <code>Person</code> 的熟人即可。</p>
-<div class="code-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateTagValueSum</span><span class="params">(<span class="type">int</span> id1, <span class="type">int</span> id2, <span class="type">int</span> value)</span> {</span><br><span class="line">    <span class="type">MyPerson</span> <span class="variable">p1</span> <span class="operator">=</span> acquaintances.get(id1);</span><br><span class="line">    <span class="type">MyPerson</span> <span class="variable">p2</span> <span class="operator">=</span> acquaintances.get(id2);</span><br><span class="line">    <span class="keyword">if</span> (p1 != <span class="literal">null</span> &amp;&amp; p2 != <span class="literal">null</span>) {</span><br><span class="line">        <span class="keyword">for</span> (MyTag tag : tags.values()) {</span><br><span class="line">            <span class="keyword">if</span> (tag.hasPerson(p1) &amp;&amp; tag.hasPerson(p2)) {</span><br><span class="line">                tag.updateValueSum(value);</span><br><span class="line">            }</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
-
-<h2 id="规格与实现"><a href="#规格与实现" class="headerlink" title="规格与实现"></a>规格与实现</h2><p>所谓 <strong>规格</strong>，就是<strong>逻辑的抽象</strong>，能够帮助我们 <strong>准确地把握需求</strong>，在 <strong>目的</strong> 层面指导我们的开发。</p>
-<p>所谓 <strong>实现</strong>，就是<strong>代码的落地</strong>，能够帮助我们 <strong>高效地完成需求</strong>，在 <strong>手段</strong> 层面组织我们的开发。</p>
-<p>二者的分离，是实际开发的需要。前者界定了设计的方向，后者保证了创造的空间。从维护的角度来看，规格所明确的需求和具体的代码实现分离，有利于一个项目长期稳定的开发；从合作的角度来看，规格提供了统一的需求共识，有利于不同开发者多元一体的协同。</p>
-<h2 id="Junit-测试"><a href="#Junit-测试" class="headerlink" title="Junit 测试"></a>Junit 测试</h2><p>在本单元之前，我个人对 <strong>Junit</strong> 测试一直抱有嗤之以鼻的态度，认为它“食之无味，弃之可惜”。但在本单元它与规格结合起来后，我逐渐体会到它的价值。</p>
-<p>我们认为 <strong>Junit</strong> 鸡肋，主要还是对测试什么不明确的原因所致，而规格恰巧弥补了这一点。在完成基本的数据生成之后，我们只需忠实地按照 <strong>JML</strong> 规格所规定的内容去检验即可。因为我们只需进行最简单的正确性测试，所以无需考虑性能，只要按照规格的逻辑去翻译即可。由于规格本身的严谨性，基于规格的 <strong>Junit</strong> 测试甚至可以实现半自动化。</p>
-<p>从检验代码实现与规格的一致性的角度来说，<strong>Junit</strong> 这种白箱测试的手段能够直击程序的内部，帮助我们检验是否满足 <code>assignable</code> 的限制，灵活性高、效果显著。</p>
-<h2 id="学习体会"><a href="#学习体会" class="headerlink" title="学习体会"></a>学习体会</h2><p><strong>JML</strong> 规格是一种很好的开发辅助工具，能帮助我们实现 <strong>清晰的架构设计</strong>。最直接的体现就是，课程组的 <strong>JML</strong> 规格帮我们做好了架构设计，我们几乎可以没有任何负担地、不动脑子地完成代码实现，完全不必担心架构设计不合理、调用关系不清晰带来的负面效果，大大提高了开发效率。</p>
-<p>我之前常常有对函数调用组织的困惑，比如一个函数传入的参数，是应该让调用者保证不为空，还是被调用者对为空的情况进行特别处理。我在之前的架构设计中并没有对这个问题做出很好的解答，结果往往是判断冗余或处理缺失，并没有很好地整体观念。而本次作业中，顶层的 <code>NetWork</code> 类就对整个架构做了良好的组织，按照函数的前置条件要求去调用，在不符合条件的情况下抛出异常，结构相当清晰。</p>
-<p>本单元我们只是站在巨人的肩膀上进行开发，并没有体会从自然语言的需求到 JML 规格设计的这一流程，希望学习学妹们有机会体验动手写 JML 规格。</p>
-]]></content>
-      <categories>
-        <category>OO</category>
-      </categories>
-      <tags>
-        <tag>JML 规格</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>电梯调度</title>
     <url>/2025/02/22/OO/BUAA%20OO%20Unit%202/</url>
     <content><![CDATA[<h1 id="BUAA-2024-OO-Unit-2"><a href="#BUAA-2024-OO-Unit-2" class="headerlink" title="BUAA 2024 OO Unit 2"></a>BUAA 2024 OO Unit 2</h1><h2 id="Unit-2-概览"><a href="#Unit-2-概览" class="headerlink" title="Unit 2 概览"></a>Unit 2 概览</h2><p>第二单元的核心内容是 <strong>多线程程序设计</strong>，以 <strong>电梯调度</strong> 问题为核心任务。即给定具有特定参数（容量、开关门时间、运行速度等）的六部电梯，不定时输入乘客（纸片人，被动接受电梯调度）请求和电梯重置请求（修改参数，单轿厢变双轿厢），要求在规定时间内将乘客正确送达，并通过输出时间戳的方式检验调度是否合乎逻辑。</p>
@@ -765,6 +703,68 @@
       </tags>
   </entry>
   <entry>
+    <title>社交网络</title>
+    <url>/2025/02/22/OO/BUAA%20OO%20Unit%203/</url>
+    <content><![CDATA[<h1 id="BUAA-OO-Unit-3"><a href="#BUAA-OO-Unit-3" class="headerlink" title="BUAA OO Unit 3"></a>BUAA OO Unit 3</h1><h2 id="Unit-3-概览"><a href="#Unit-3-概览" class="headerlink" title="Unit 3 概览"></a>Unit 3 概览</h2><p>第三单元的核心内容是 <strong>JML</strong>（java modeling language）规格的理解与运用，以 <strong>社交网络</strong> 的模拟为核心任务。</p>
+<h3 id="为什么要引入-JML-规格"><a href="#为什么要引入-JML-规格" class="headerlink" title="为什么要引入 JML 规格"></a>为什么要引入 JML 规格</h3><p>我们知道，要理解一个函数的作用，最有效的方法就是直接 <strong>读源码</strong> ，可以帮助我们直入函数的底层逻辑，了解它的来龙去脉；但是这样的效率十分低下，而且我相信对于程序员来说阅读别人的代码一定是一件令人头疼的事。于是，我们开始 <strong>写注释</strong> ，来简明地说明这个函数的作用，帮助使用者快速地理解；但这样往往容易出现理解的偏差，因为函数的注释很可能不够全面，而且自然语言容易产生歧义。</p>
+<p>特别是在大型项目的开发中，自己写的函数可能过了一会儿就忘了是干什么的，那就更遑论合作开发了……为了克服上述两种方式的弊端，也为了吸纳上述两种方式的优点，我们在 <strong>准确性</strong> 和 <strong>高效性</strong> 之间做了 <strong>trade-off</strong>，就产生了 JML。</p>
+<h3 id="什么是-JML-规格"><a href="#什么是-JML-规格" class="headerlink" title="什么是 JML 规格"></a>什么是 JML 规格</h3><p>简单来说，JML 规格就是 <strong>标准化的注释</strong>。首先，它是一种注释，对于程序的正确运行不会产生任何影响；其次，它又是标准化的，没有二义性，任何人读了都只会产生一种理解。JML 规格以一种类似 Java 语言本身的语法，规定了调用者需要保证的东西、函数的效果和可能产生的副作用、返回值的特点等方面的内容，使得我们可以 <strong>更安全</strong>、<strong>更高效</strong> 地进行程序设计和项目开发。</p>
+<h2 id="测试过程"><a href="#测试过程" class="headerlink" title="测试过程"></a>测试过程</h2><p>由于本单元是基于 <strong>JML</strong> 规格进行开发，整个架构设计相对固定严谨，只要严格按照规格去设计，出错的可能性很小。因此，我在本单元所做的测试相对较少，主要是集中在部分方法上采用 <strong>JUnit</strong> 进行单元测试，通过对 <strong>JML</strong> 规格的直接“翻译”来检验程序设计的正确性。此外，由于本单元的输出固定，我也采用了黑箱测试的方法与同学对拍，以此进一步验证正确性。</p>
+<h3 id="黑箱测试与白箱测试"><a href="#黑箱测试与白箱测试" class="headerlink" title="黑箱测试与白箱测试"></a>黑箱测试与白箱测试</h3><h4 id="黑箱测试"><a href="#黑箱测试" class="headerlink" title="黑箱测试"></a>黑箱测试</h4><p>黑箱测试即屏蔽了具体的实现细节，仅通过 <strong>输入输出</strong> 来检验程序的正确性。</p>
+<p>优点是 <strong>实现简单</strong>，不需要关注程序内部的代码实现，只要简单地完成数据生成与输出检验即可；<strong>贴近用户</strong>，测试的过程实际上就是模拟用户体验软件功能的过程。</p>
+<p>缺点是 <strong>覆盖率较低</strong>，生成的数据往往具有局限性，难以覆盖到各种各样的边界条件；<strong>难以定位错误</strong>，当产生错误后往往仅能从结果倒推问题，模拟程序运行去发现问题。</p>
+<h4 id="白箱测试"><a href="#白箱测试" class="headerlink" title="白箱测试"></a>白箱测试</h4><p>白箱测试即在明确程序具体实现的情况下，对 <strong>程序结构</strong> 本身的正确性进行测试。</p>
+<p>优点是 <strong>直击问题</strong>，通过对程序本身的逻辑进行检查，能够直接定位问题点；<strong>覆盖率高</strong>，能够精准把握程序运行的各条路径，发现潜在的问题。</p>
+<p>缺点是 <strong>实现困难</strong>，往往只有开发者自身可能洞悉程序的结构，且只有设计极其详尽的测试才能覆盖更多的分支；<strong>设计与功能脱节</strong>，白箱测试往往只能检验程序自身逻辑的正确性，而无法衡量其是否满足功能要求。</p>
+<h3 id="单元测试、集成测试、功能测试、压力测试、回归测试"><a href="#单元测试、集成测试、功能测试、压力测试、回归测试" class="headerlink" title="单元测试、集成测试、功能测试、压力测试、回归测试"></a>单元测试、集成测试、功能测试、压力测试、回归测试</h3><h4 id="单元测试"><a href="#单元测试" class="headerlink" title="单元测试"></a>单元测试</h4><p>单元测试即针对程序设计的某一 <strong>基本组成单元</strong>（类的方法、函数）进行测试。</p>
+<p>特点是能够直接检验最小模块在业务逻辑上的正确性，快速定位问题。但实现起来比较复杂，需要对具体的模块有针对性的设计测试方案。</p>
+<p>我们本单元要求针对某一方法进行的测试就是单元测试。</p>
+<h4 id="集成测试"><a href="#集成测试" class="headerlink" title="集成测试"></a>集成测试</h4><p>集成测试即在单元测试的基础上，将 <strong>模块组装成系统</strong> 进行测试。</p>
+<p>特点是能够检验不同模块之间的协调性，针对模块接口以及整个体系结构，发现程序在局部上反映不出来，但在全局上就会暴露出来的问题。但实现开销较大，需要在做足单元测试的基础上进行设计。</p>
+<p>我们本单元进行单元测试时，保证了其他方法的正确实现，同时提供了 <code>stricEquals</code>、<code>getPersons</code> 等方法来辅助我们进行测试，实际上也是集成测试的体现。</p>
+<h4 id="功能测试"><a href="#功能测试" class="headerlink" title="功能测试"></a>功能测试</h4><p>功能测试即检验软件系统是否正确实现 <strong>功能要求</strong> 的测试。</p>
+<p>特点是通常采用黑箱测试的方法，检验业务逻辑是否正确实现，能否满足客户需求。</p>
+<p>我们本单元检验 <code>qtvs</code>、<code>qbs</code> 等指令的输出是否正确，实际上就是功能测试</p>
+<h4 id="压力测试"><a href="#压力测试" class="headerlink" title="压力测试"></a>压力测试</h4><p>压力测试即对系统施加 <strong>大量负载</strong>（线程、输入、用户、流量）的测试。</p>
+<p>特点是检验系统的性能瓶颈和鲁棒性。</p>
+<p>我们本单元第二次作业中，最后一个强测点中有大量的 <code>qtvs 114514 1919810</code> ，就是通过压力测试来检验我们程序的性能是否合乎 10s CPU 时间的要求。</p>
+<h4 id="回归测试"><a href="#回归测试" class="headerlink" title="回归测试"></a>回归测试</h4><p>回归测试即在软件改动后（升级、打补丁）<strong>重新测试</strong> 先前测试过的内容。</p>
+<p>特点是保证不会引入新的错误，导致回归（退化），但在测试内容较多的情况下可能时间、人力成本较高。</p>
+<p>我们在进行 bug 修复时，要求保证本来已经正确的内容不得出错、代码风格分不得降低才能提交，这实际上就是回归测试。</p>
+<h3 id="数据构造策略"><a href="#数据构造策略" class="headerlink" title="数据构造策略"></a>数据构造策略</h3><p>从本单元的具体内容来看，构造数据时应该考虑三方面的内容。</p>
+<p>一是考虑 <strong>数据的范围</strong>。比如 <strong>id</strong> 在 <strong>int</strong> 范围内，我们就要考虑 <strong>int</strong> 范围的边界，构造对应的测试数据。</p>
+<p>二是考虑 <strong>图的特征</strong>。本单元的功能实现很多都是图的内容，我们就需要考虑稀疏图、稠密图、连通图、非连通图等具有不同结构特征的图进行测试。</p>
+<p>三是考虑 <strong>压力测试</strong>。本单元的许多指令如 <code>qbs</code>、<code>qcs</code> 等直观看起来都有较高的复杂度，我们需要大量构造这类数据来检验程序是否在性能上做出良好的处理。</p>
+<h2 id="架构设计"><a href="#架构设计" class="headerlink" title="架构设计"></a>架构设计</h2><p><strong>JML</strong> 规格实际上为本单元设计了良好的架构。<code>Tag</code> 、<code>Message</code> 、<code>Person</code>  作为底层类，实现最基本的功能。<code>NetWork</code> 作为顶层类，统一管理调度这些类，实现用户功能。</p>
+<h3 id="图模型构建"><a href="#图模型构建" class="headerlink" title="图模型构建"></a>图模型构建</h3><p>本单元的图模型是 <strong>以点为核心</strong> 进行构建。<code>Person</code> 类作为一个个节点，其内存放有与其相连的所有节点，进而构成了边的概念。<code>NetWork</code> 中存放了社交网络中的所有人，由此构成了图的概念。</p>
+<h3 id="图模型维护"><a href="#图模型维护" class="headerlink" title="图模型维护"></a>图模型维护</h3><p>对于找点的操作，由于采取了 <code>HashMap</code> 的容器，直接通过 <code>id</code> 映射到对应的值即可。</p>
+<p>对于加边、删边的操作，只需在对应的两个 <code>Person</code> 对象中加上或删去对方的引用即可。</p>
+<p>对于修改边的权重的操作，只需在对应的两个 <code>Person</code> 对象中修改其对应位置的 <code>value</code> 值即可。</p>
+<p>对于遍历操作，只需深度或广度遍历每个<code>Person</code> 对象即可。</p>
+<h2 id="性能问题及其修复"><a href="#性能问题及其修复" class="headerlink" title="性能问题及其修复"></a>性能问题及其修复</h2><h3 id="图的深度优先遍历"><a href="#图的深度优先遍历" class="headerlink" title="图的深度优先遍历"></a>图的深度优先遍历</h3><p>在最初写的时候，我认为在图的规模十分庞大的情况，采取递归的写法可能存在爆栈的风险（事实证明是我多虑了），于是采用栈的结构模拟深度优先遍历的过程。但是我在使用 <code>isVisited</code> 容器记录访问过的节点时，错误地认为 <strong>只有完成指定操作的节点才算被访问</strong>，导致已经在栈中的节点被频繁加入栈中，进行了大量空循环的操作导致超时。而事实上，<code>isVisited</code> 中记录的应该是 <strong>已经进入（过）栈中的节点</strong>。一个比较合理的写法如下：</p>
+<div class="code-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">dfs</span><span class="params">(<span class="type">int</span> node, CallBack callBack)</span> {</span><br><span class="line">    Stack&lt;Integer&gt; stack = <span class="keyword">new</span> <span class="title class_">Stack</span>&lt;&gt;();</span><br><span class="line">    HashSet&lt;Integer&gt; isVisited = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line">    stack.push(node);</span><br><span class="line">    isVisited.add(node);</span><br><span class="line">    <span class="keyword">while</span> (!stack.isEmpty()) {</span><br><span class="line">        <span class="type">int</span> <span class="variable">now</span> <span class="operator">=</span> stack.pop();</span><br><span class="line">        callBack.operateNode(now);</span><br><span class="line">        HashSet&lt;Integer&gt; otherNodes = nodeToSet.get(now);</span><br><span class="line">        <span class="keyword">for</span> (Integer otherNode : otherNodes) {</span><br><span class="line">            <span class="keyword">if</span> (!isVisited.contains(otherNode)) {</span><br><span class="line">                stack.push(otherNode);</span><br><span class="line">                isVisited.add(otherNode);</span><br><span class="line">            }</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="qtvs-指令"><a href="#qtvs-指令" class="headerlink" title="qtvs 指令"></a>qtvs 指令</h3><p>这个指令用于查询一个 <code>Tag</code> 内所有 <code>Person</code> 之间的 <code>value</code> 总和。在最初写的时候，我经过简单的计算认为，在 10000 条指令内，采取朴素的双层循环遍历的方法 CPU 时间不会超过 10s。但实际上我的复杂度计算方式 <strong>忽略了幂函数前面的系数</strong>，这在数量级相当的情况下是极有可能超时的（而且评测环境并不足够理想），于是我就顺理成章的超时了。<strong>痛定思痛</strong>，我就抛弃了一切偷懒的幻想，采取 <strong>动态维护</strong> 的方式来维护 <code>valueSum</code> ，其核心就是当任意两个 <code>Person</code> 之间的 <code>value</code> 变化时（或大小变化，或从无到有，或从有到无），应当 <strong>对同时包含这两个 Person 的所有 Tag 进行维护</strong> 。因为一个 <code>Person</code> 对象的 <code>Tag</code> 里含有的 <code>Person</code> 一定时这个对象自身的熟人，所以我们在找 <code>Tag</code> 时只需遍历被修改关系的 <code>Person</code> 的熟人即可。</p>
+<div class="code-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateTagValueSum</span><span class="params">(<span class="type">int</span> id1, <span class="type">int</span> id2, <span class="type">int</span> value)</span> {</span><br><span class="line">    <span class="type">MyPerson</span> <span class="variable">p1</span> <span class="operator">=</span> acquaintances.get(id1);</span><br><span class="line">    <span class="type">MyPerson</span> <span class="variable">p2</span> <span class="operator">=</span> acquaintances.get(id2);</span><br><span class="line">    <span class="keyword">if</span> (p1 != <span class="literal">null</span> &amp;&amp; p2 != <span class="literal">null</span>) {</span><br><span class="line">        <span class="keyword">for</span> (MyTag tag : tags.values()) {</span><br><span class="line">            <span class="keyword">if</span> (tag.hasPerson(p1) &amp;&amp; tag.hasPerson(p2)) {</span><br><span class="line">                tag.updateValueSum(value);</span><br><span class="line">            }</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
+
+<h2 id="规格与实现"><a href="#规格与实现" class="headerlink" title="规格与实现"></a>规格与实现</h2><p>所谓 <strong>规格</strong>，就是<strong>逻辑的抽象</strong>，能够帮助我们 <strong>准确地把握需求</strong>，在 <strong>目的</strong> 层面指导我们的开发。</p>
+<p>所谓 <strong>实现</strong>，就是<strong>代码的落地</strong>，能够帮助我们 <strong>高效地完成需求</strong>，在 <strong>手段</strong> 层面组织我们的开发。</p>
+<p>二者的分离，是实际开发的需要。前者界定了设计的方向，后者保证了创造的空间。从维护的角度来看，规格所明确的需求和具体的代码实现分离，有利于一个项目长期稳定的开发；从合作的角度来看，规格提供了统一的需求共识，有利于不同开发者多元一体的协同。</p>
+<h2 id="Junit-测试"><a href="#Junit-测试" class="headerlink" title="Junit 测试"></a>Junit 测试</h2><p>在本单元之前，我个人对 <strong>Junit</strong> 测试一直抱有嗤之以鼻的态度，认为它“食之无味，弃之可惜”。但在本单元它与规格结合起来后，我逐渐体会到它的价值。</p>
+<p>我们认为 <strong>Junit</strong> 鸡肋，主要还是对测试什么不明确的原因所致，而规格恰巧弥补了这一点。在完成基本的数据生成之后，我们只需忠实地按照 <strong>JML</strong> 规格所规定的内容去检验即可。因为我们只需进行最简单的正确性测试，所以无需考虑性能，只要按照规格的逻辑去翻译即可。由于规格本身的严谨性，基于规格的 <strong>Junit</strong> 测试甚至可以实现半自动化。</p>
+<p>从检验代码实现与规格的一致性的角度来说，<strong>Junit</strong> 这种白箱测试的手段能够直击程序的内部，帮助我们检验是否满足 <code>assignable</code> 的限制，灵活性高、效果显著。</p>
+<h2 id="学习体会"><a href="#学习体会" class="headerlink" title="学习体会"></a>学习体会</h2><p><strong>JML</strong> 规格是一种很好的开发辅助工具，能帮助我们实现 <strong>清晰的架构设计</strong>。最直接的体现就是，课程组的 <strong>JML</strong> 规格帮我们做好了架构设计，我们几乎可以没有任何负担地、不动脑子地完成代码实现，完全不必担心架构设计不合理、调用关系不清晰带来的负面效果，大大提高了开发效率。</p>
+<p>我之前常常有对函数调用组织的困惑，比如一个函数传入的参数，是应该让调用者保证不为空，还是被调用者对为空的情况进行特别处理。我在之前的架构设计中并没有对这个问题做出很好的解答，结果往往是判断冗余或处理缺失，并没有很好地整体观念。而本次作业中，顶层的 <code>NetWork</code> 类就对整个架构做了良好的组织，按照函数的前置条件要求去调用，在不符合条件的情况下抛出异常，结构相当清晰。</p>
+<p>本单元我们只是站在巨人的肩膀上进行开发，并没有体会从自然语言的需求到 JML 规格设计的这一流程，希望学习学妹们有机会体验动手写 JML 规格。</p>
+]]></content>
+      <categories>
+        <category>OO</category>
+      </categories>
+      <tags>
+        <tag>JML 规格</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>OS-Lab1</title>
     <url>/2025/02/22/OS/Lab1%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8A/</url>
     <content><![CDATA[<h1 id="Lab1-实验报告"><a href="#Lab1-实验报告" class="headerlink" title="Lab1 实验报告"></a>Lab1 实验报告</h1><h2 id="Thinking"><a href="#Thinking" class="headerlink" title="Thinking"></a>Thinking</h2><h3 id="Thinking-1-1"><a href="#Thinking-1-1" class="headerlink" title="Thinking 1.1"></a>Thinking 1.1</h3><blockquote>
@@ -839,6 +839,73 @@
       </categories>
       <tags>
         <tag>系统启动</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>OS-Lab0</title>
+    <url>/2025/02/22/OS/Lab0%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8A/</url>
+    <content><![CDATA[<h1 id="Lab0-实验报告"><a href="#Lab0-实验报告" class="headerlink" title="Lab0 实验报告"></a>Lab0 实验报告</h1><h2 id="思考题"><a href="#思考题" class="headerlink" title="思考题"></a>思考题</h2><h3 id="Thinking-0-1"><a href="#Thinking-0-1" class="headerlink" title="Thinking 0.1"></a>Thinking 0.1</h3><blockquote>
+<p>执行命令 cat Modified.txt，观察其结果和第一次执行 add 命令之前的 status 是否一样，并思考原因。</p>
+</blockquote>
+<p><figure class="image-caption"><img lazyload="" src="/images/loading.svg" data-src="https://foolish-han.oss-cn-beijing.aliyuncs.com/img/image.png" alt="第一次执行 add 命令之前"><figcaption>第一次执行 add 命令之前</figcaption></figure><br><figure class="image-caption"><img lazyload="" src="/images/loading.svg" data-src="https://foolish-han.oss-cn-beijing.aliyuncs.com/img/image-1.png" alt="修改 README.txt 之后"><figcaption>修改 README.txt 之后</figcaption></figure></p>
+<p>不一样。<br><br>第一次执行 add 命令之前，README.txt 属于未跟踪的文件。<br><br>修改 README.txt 之后，README.txt 属于已跟踪，但修改未加入到暂存区中的文件。</p>
+<h3 id="Thinking-0-2"><a href="#Thinking-0-2" class="headerlink" title="Thinking 0.2"></a>Thinking 0.2</h3><blockquote>
+<p>仔细看看0.10，思考一下箭头中的 add the file 、 stage the file 和 commit 分别对应的是 Git 里的哪些命令呢？</p>
+</blockquote>
+<p>add the file: git add<br><br>stage the file: git add<br><br>commit : git commit</p>
+<h3 id="Thinking-0-3"><a href="#Thinking-0-3" class="headerlink" title="Thinking 0.3"></a>Thinking 0.3</h3><p><strong>1.</strong> &gt; 代码文件 print.c 被错误删除时，应当使用什么命令将其恢复？</p>
+   <div class="code-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">git checkout -- print.c</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>2.</strong> &gt; 代码文件 print.c 被错误删除后，执行了 git rm print.c 命令，此时应当使用什么命令将其恢复？</p>
+   <div class="code-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">git reset HEAD print.c</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>3.</strong> &gt; 无关文件 hello.txt 已经被添加到暂存区时，如何在不删除此文件的前提下将其移出暂存区？</p>
+   <div class="code-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">git rm --cached hello.txt</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="Thinking-0-6"><a href="#Thinking-0-6" class="headerlink" title="Thinking 0.6"></a>Thinking 0.6</h3><blockquote>
+<p>使用你知道的方法（包括重定向）创建下图内容的文件（文件命名为 test），将创建该文件的命令序列保存在 command 文件中，并将 test 文件作为批处理文件运行，将运行结果输出至 result 文件中。给出 command 文件和 result 文件的内容，并对最后的结果进行解释说明（可以从 test 文件的内容入手） . 具体实现的过程中思考下列问题: echo echo Shell Start 与 echo <code>echo Shell Start</code> 效果是否有区别; echo echo $c&gt;file1与 echo <code>echo $c&gt;file1</code> 效果是否有区别.</p>
+</blockquote>
+<p>command 文件内容:</p>
+<div class="code-container" data-rel="Bash"><figure class="iseeu highlight bash"><figcaption><span>{.line-numbers}</span></figcaption><table><tr><td class="code"><pre><span class="line">{</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo Shell Start..."</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo set a = 1"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"a=1"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo set b = 2"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"b=2"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo set c = a+b"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"c=\$[\$a+\$b]"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo c = \$c"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo save c to ./file1"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo \$c&gt;file1"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo save b to ./file2"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo \$b&gt;file2"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo save a to ./file3"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo \$a&gt;file3"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo save file1 file2 file3 to file4"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"cat file1&gt;file4"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"cat file2&gt;&gt;file4"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"cat file3&gt;&gt;file4"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo save file4 to ./result"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"cat file4&gt;&gt;result"</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
+
+<p>把 command 作为批处理文件运行得到 test:</p>
+<div class="code-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">bash command &gt; test</span><br></pre></td></tr></table></figure></div>
+
+<p>test 文件内容:</p>
+<div class="code-container" data-rel="Bash"><figure class="iseeu highlight bash"><figcaption><span>{.line-numbers}</span></figcaption><table><tr><td class="code"><pre><span class="line"><span class="built_in">echo</span> Shell Start...</span><br><span class="line"><span class="built_in">echo</span> <span class="built_in">set</span> a = 1</span><br><span class="line">a=1</span><br><span class="line"><span class="built_in">echo</span> <span class="built_in">set</span> b = 2</span><br><span class="line">b=2</span><br><span class="line"><span class="built_in">echo</span> <span class="built_in">set</span> c = a+b</span><br><span class="line">c=$[<span class="variable">$a</span>+<span class="variable">$b</span>]</span><br><span class="line"><span class="built_in">echo</span> c = <span class="variable">$c</span></span><br><span class="line"><span class="built_in">echo</span> save c to ./file1</span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$c</span>&gt;file1</span><br><span class="line"><span class="built_in">echo</span> save b to ./file2</span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$b</span>&gt;file2</span><br><span class="line"><span class="built_in">echo</span> save a to ./file3</span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$a</span>&gt;file3</span><br><span class="line"><span class="built_in">echo</span> save file1 file2 file3 to file4</span><br><span class="line"><span class="built_in">cat</span> file1&gt;file4</span><br><span class="line"><span class="built_in">cat</span> file2&gt;&gt;file4</span><br><span class="line"><span class="built_in">cat</span> file3&gt;&gt;file4</span><br><span class="line"><span class="built_in">echo</span> save file4 to ./result</span><br><span class="line"><span class="built_in">cat</span> file4&gt;&gt;result</span><br></pre></td></tr></table></figure></div>
+
+<p>把 test 作为批处理文件运行得到 result:</p>
+<div class="code-container" data-rel="Txt"><figure class="iseeu highlight txt"><figcaption><span>{.line-numbers}</span></figcaption><table><tr><td class="code"><pre><span class="line">Shell Start...</span><br><span class="line">set a = 1</span><br><span class="line">set b = 2</span><br><span class="line">set c = a+b</span><br><span class="line">c = 3</span><br><span class="line">save c to ./file1</span><br><span class="line">save b to ./file2</span><br><span class="line">save a to ./file3</span><br><span class="line">save file1 file2 file3 to file4</span><br><span class="line">save file4 to ./result</span><br><span class="line">3</span><br><span class="line">2</span><br><span class="line">1</span><br></pre></td></tr></table></figure></div>
+
+<blockquote>
+<p>echo echo Shell Start 与 echo <code>echo Shell Start</code> 效果是否有区别</p>
+</blockquote>
+<p>在实际效果上，二者并无区别，都是输出<code>Shell Start</code>到标准输入。<br><br>但前者是直接通过<code>echo</code>命令输出，后者是先执行<code>` `</code>内的命令<code>echo Shell Start</code>，并将标准输出的结果<code>Shell Start</code>作为参数传给<code>` `</code>外的命令<code>echo</code>。</p>
+<blockquote>
+<p>echo echo $c&gt;file1 与 echo <code>echo $c&gt;file1</code> 效果是否有区别</p>
+</blockquote>
+<p>有区别:<br><br>前者是将<code>echo</code>与变量<code>c</code>的值拼接起来，输出到文件<code>file1</code>当中;<br><br>后者是先执行<code>echo $c&gt;file1</code>命令，即将变量<code>c</code>的值输出到文件<code>file1</code>中，同时将标准输出的结果作为参数传给<code>` `</code>外的命令<code>echo</code>，而标准输出的结果实际上为空，<code>` `</code>外的命令<code>echo</code>将没有任何效果。</p>
+<h2 id="难点分析"><a href="#难点分析" class="headerlink" title="难点分析"></a>难点分析</h2><h3 id="Exercise-0-1"><a href="#Exercise-0-1" class="headerlink" title="Exercise 0.1"></a>Exercise 0.1</h3><h4 id="0-1-1"><a href="#0-1-1" class="headerlink" title="0.1.1"></a>0.1.1</h4><p>对于回文数判断，最直接的思路应该是得到整数对应的高位和低位，依次进行比较，但这样未免繁琐，需要考虑整数的位数。这种思路只关注了回文数形式上的特征。<br>而另一种简洁的思路是不关注单独的每一位，而是尝试把整数倒转过来，通过对判断前后是否相等直接得到结果。这种思路无疑是把握了回文数的本质。</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><figcaption><span>{.line-numbers}</span></figcaption><table><tr><td class="code"><pre><span class="line"><span class="keyword">while</span>(n){</span><br><span class="line">   q=q*<span class="number">10</span>+n%<span class="number">10</span>;</span><br><span class="line">   n/=<span class="number">10</span>;</span><br><span class="line">}</span><br><span class="line"><span class="keyword">if</span> (s==q)</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="0-1-3"><a href="#0-1-3" class="headerlink" title="0.1.3"></a>0.1.3</h4><p>通过 shell 脚本实现对文本的处理，能够按行选择性读取文本的 <code>sed</code> 指令显然是个很好的选择，把输出重定向即可按照要求创建文件（注意覆盖写即可）</p>
+<div class="code-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">sed -n '8p; 32p; 128p; 512p; 1024p' "$1" &gt; "$2"</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="Exercise-0-2"><a href="#Exercise-0-2" class="headerlink" title="Exercise 0.2"></a>Exercise 0.2</h3><h4 id="0-2-1"><a href="#0-2-1" class="headerlink" title="0.2.1"></a>0.2.1</h4><p>注意取变量的值时需要加上 <code>$</code> 符号，对变量赋值时可采用 <code>let</code>（不用加 <code>$</code> ） 或 <code>(())</code>（需要加 <code>$</code> 取值），但都要注意 <code>=</code> 两边不能有空格。</p>
+<h3 id="Exercise-0-3"><a href="#Exercise-0-3" class="headerlink" title="Exercise 0.3"></a>Exercise 0.3</h3><h4 id="0-3-1"><a href="#0-3-1" class="headerlink" title="0.3.1"></a>0.3.1</h4><p>使用 <code>grep</code> 命令来在文件中匹配字符串，通过 <code>-n</code>选项使输出的行带上行号（行号与行之间以 <code>:</code> 分隔）。<br><br>通过管道 <code>|</code> 将输出的结果作为参数传给 <code>awk</code> 指令。<br><br>使用 <code>-F:</code> 选项将传入的字符串按照 <code>:</code> 分隔，同时使用 <code>{print $1}</code> 方法打印分割后的第一个字符串（即行号）。<br><br>通过输出重定向将结果输出到文件中。</p>
+<h3 id="Exercise-0-4"><a href="#Exercise-0-4" class="headerlink" title="Exercise 0.4"></a>Exercise 0.4</h3><h4 id="0-4-1"><a href="#0-4-1" class="headerlink" title="0.4.1"></a>0.4.1</h4><p>使用 <code>sed</code> 指令时，注意加上 <code>-i</code> 选项使得可以直接修改文件。使用正则表达式进行替换时，注意加上 <code>/g</code> 使得可以匹配全部的项（否则只是每行第一个）</p>
+<h4 id="0-4-2"><a href="#0-4-2" class="headerlink" title="0.4.2"></a>0.4.2</h4><p>使用 <code>gcc</code> 编译时，应注意到 <code>fibo.c</code> 和 <code>main.c</code> 引用的头文件并不在标准库中，应使用 <code>-I</code> 选项指定头文件目录。同时注意到 <code>main.c</code> 作为程序的入口调用了 <code>fibo.c</code> 中的函数，应把二者放在一起编译链接。</p>
+<h2 id="实验体会"><a href="#实验体会" class="headerlink" title="实验体会"></a>实验体会</h2><blockquote>
+<p>熟能生巧！熟能生巧！熟能生巧！</p>
+</blockquote>
+<p>lab0实验作为 OS 实验的铺垫环节，旨在帮助我们掌握深入理解基本概念，灵活运用各种工具，其本身并无多大难度。<br><br>面对繁杂的指令，可能会认为有参考就不需要太多的记忆。但事实上对各种指令的记忆正是灵活运用的一部分。<br><br>在需要时去查看指导书固然不错，但这种情况下我们往往只会机械地照搬示例指令，而不能以更好地方式去运用指令，同时会消耗大量时间在不必要的事情上（记忆错误debug、提笔忘字查refer）。<br><br>熟稔于心是灵活运用的前提。从某种程度上说，指令就是一个个穴位，只有打通任督二脉，才能练就绝世武功。</p>
+]]></content>
+      <categories>
+        <category>OS</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>shell</tag>
       </tags>
   </entry>
   <entry>
@@ -1500,73 +1567,6 @@
       </categories>
       <tags>
         <tag>shell</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>OS-Lab0</title>
-    <url>/2025/02/22/OS/Lab0%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8A/</url>
-    <content><![CDATA[<h1 id="Lab0-实验报告"><a href="#Lab0-实验报告" class="headerlink" title="Lab0 实验报告"></a>Lab0 实验报告</h1><h2 id="思考题"><a href="#思考题" class="headerlink" title="思考题"></a>思考题</h2><h3 id="Thinking-0-1"><a href="#Thinking-0-1" class="headerlink" title="Thinking 0.1"></a>Thinking 0.1</h3><blockquote>
-<p>执行命令 cat Modified.txt，观察其结果和第一次执行 add 命令之前的 status 是否一样，并思考原因。</p>
-</blockquote>
-<p><figure class="image-caption"><img lazyload="" src="/images/loading.svg" data-src="https://foolish-han.oss-cn-beijing.aliyuncs.com/img/image.png" alt="第一次执行 add 命令之前"><figcaption>第一次执行 add 命令之前</figcaption></figure><br><figure class="image-caption"><img lazyload="" src="/images/loading.svg" data-src="https://foolish-han.oss-cn-beijing.aliyuncs.com/img/image-1.png" alt="修改 README.txt 之后"><figcaption>修改 README.txt 之后</figcaption></figure></p>
-<p>不一样。<br><br>第一次执行 add 命令之前，README.txt 属于未跟踪的文件。<br><br>修改 README.txt 之后，README.txt 属于已跟踪，但修改未加入到暂存区中的文件。</p>
-<h3 id="Thinking-0-2"><a href="#Thinking-0-2" class="headerlink" title="Thinking 0.2"></a>Thinking 0.2</h3><blockquote>
-<p>仔细看看0.10，思考一下箭头中的 add the file 、 stage the file 和 commit 分别对应的是 Git 里的哪些命令呢？</p>
-</blockquote>
-<p>add the file: git add<br><br>stage the file: git add<br><br>commit : git commit</p>
-<h3 id="Thinking-0-3"><a href="#Thinking-0-3" class="headerlink" title="Thinking 0.3"></a>Thinking 0.3</h3><p><strong>1.</strong> &gt; 代码文件 print.c 被错误删除时，应当使用什么命令将其恢复？</p>
-   <div class="code-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">git checkout -- print.c</span><br></pre></td></tr></table></figure></div>
-
-<p><strong>2.</strong> &gt; 代码文件 print.c 被错误删除后，执行了 git rm print.c 命令，此时应当使用什么命令将其恢复？</p>
-   <div class="code-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">git reset HEAD print.c</span><br></pre></td></tr></table></figure></div>
-
-<p><strong>3.</strong> &gt; 无关文件 hello.txt 已经被添加到暂存区时，如何在不删除此文件的前提下将其移出暂存区？</p>
-   <div class="code-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">git rm --cached hello.txt</span><br></pre></td></tr></table></figure></div>
-
-<h3 id="Thinking-0-6"><a href="#Thinking-0-6" class="headerlink" title="Thinking 0.6"></a>Thinking 0.6</h3><blockquote>
-<p>使用你知道的方法（包括重定向）创建下图内容的文件（文件命名为 test），将创建该文件的命令序列保存在 command 文件中，并将 test 文件作为批处理文件运行，将运行结果输出至 result 文件中。给出 command 文件和 result 文件的内容，并对最后的结果进行解释说明（可以从 test 文件的内容入手） . 具体实现的过程中思考下列问题: echo echo Shell Start 与 echo <code>echo Shell Start</code> 效果是否有区别; echo echo $c&gt;file1与 echo <code>echo $c&gt;file1</code> 效果是否有区别.</p>
-</blockquote>
-<p>command 文件内容:</p>
-<div class="code-container" data-rel="Bash"><figure class="iseeu highlight bash"><figcaption><span>{.line-numbers}</span></figcaption><table><tr><td class="code"><pre><span class="line">{</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo Shell Start..."</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo set a = 1"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"a=1"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo set b = 2"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"b=2"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo set c = a+b"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"c=\$[\$a+\$b]"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo c = \$c"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo save c to ./file1"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo \$c&gt;file1"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo save b to ./file2"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo \$b&gt;file2"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo save a to ./file3"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo \$a&gt;file3"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo save file1 file2 file3 to file4"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"cat file1&gt;file4"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"cat file2&gt;&gt;file4"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"cat file3&gt;&gt;file4"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"echo save file4 to ./result"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"cat file4&gt;&gt;result"</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure></div>
-
-<p>把 command 作为批处理文件运行得到 test:</p>
-<div class="code-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">bash command &gt; test</span><br></pre></td></tr></table></figure></div>
-
-<p>test 文件内容:</p>
-<div class="code-container" data-rel="Bash"><figure class="iseeu highlight bash"><figcaption><span>{.line-numbers}</span></figcaption><table><tr><td class="code"><pre><span class="line"><span class="built_in">echo</span> Shell Start...</span><br><span class="line"><span class="built_in">echo</span> <span class="built_in">set</span> a = 1</span><br><span class="line">a=1</span><br><span class="line"><span class="built_in">echo</span> <span class="built_in">set</span> b = 2</span><br><span class="line">b=2</span><br><span class="line"><span class="built_in">echo</span> <span class="built_in">set</span> c = a+b</span><br><span class="line">c=$[<span class="variable">$a</span>+<span class="variable">$b</span>]</span><br><span class="line"><span class="built_in">echo</span> c = <span class="variable">$c</span></span><br><span class="line"><span class="built_in">echo</span> save c to ./file1</span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$c</span>&gt;file1</span><br><span class="line"><span class="built_in">echo</span> save b to ./file2</span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$b</span>&gt;file2</span><br><span class="line"><span class="built_in">echo</span> save a to ./file3</span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$a</span>&gt;file3</span><br><span class="line"><span class="built_in">echo</span> save file1 file2 file3 to file4</span><br><span class="line"><span class="built_in">cat</span> file1&gt;file4</span><br><span class="line"><span class="built_in">cat</span> file2&gt;&gt;file4</span><br><span class="line"><span class="built_in">cat</span> file3&gt;&gt;file4</span><br><span class="line"><span class="built_in">echo</span> save file4 to ./result</span><br><span class="line"><span class="built_in">cat</span> file4&gt;&gt;result</span><br></pre></td></tr></table></figure></div>
-
-<p>把 test 作为批处理文件运行得到 result:</p>
-<div class="code-container" data-rel="Txt"><figure class="iseeu highlight txt"><figcaption><span>{.line-numbers}</span></figcaption><table><tr><td class="code"><pre><span class="line">Shell Start...</span><br><span class="line">set a = 1</span><br><span class="line">set b = 2</span><br><span class="line">set c = a+b</span><br><span class="line">c = 3</span><br><span class="line">save c to ./file1</span><br><span class="line">save b to ./file2</span><br><span class="line">save a to ./file3</span><br><span class="line">save file1 file2 file3 to file4</span><br><span class="line">save file4 to ./result</span><br><span class="line">3</span><br><span class="line">2</span><br><span class="line">1</span><br></pre></td></tr></table></figure></div>
-
-<blockquote>
-<p>echo echo Shell Start 与 echo <code>echo Shell Start</code> 效果是否有区别</p>
-</blockquote>
-<p>在实际效果上，二者并无区别，都是输出<code>Shell Start</code>到标准输入。<br><br>但前者是直接通过<code>echo</code>命令输出，后者是先执行<code>` `</code>内的命令<code>echo Shell Start</code>，并将标准输出的结果<code>Shell Start</code>作为参数传给<code>` `</code>外的命令<code>echo</code>。</p>
-<blockquote>
-<p>echo echo $c&gt;file1 与 echo <code>echo $c&gt;file1</code> 效果是否有区别</p>
-</blockquote>
-<p>有区别:<br><br>前者是将<code>echo</code>与变量<code>c</code>的值拼接起来，输出到文件<code>file1</code>当中;<br><br>后者是先执行<code>echo $c&gt;file1</code>命令，即将变量<code>c</code>的值输出到文件<code>file1</code>中，同时将标准输出的结果作为参数传给<code>` `</code>外的命令<code>echo</code>，而标准输出的结果实际上为空，<code>` `</code>外的命令<code>echo</code>将没有任何效果。</p>
-<h2 id="难点分析"><a href="#难点分析" class="headerlink" title="难点分析"></a>难点分析</h2><h3 id="Exercise-0-1"><a href="#Exercise-0-1" class="headerlink" title="Exercise 0.1"></a>Exercise 0.1</h3><h4 id="0-1-1"><a href="#0-1-1" class="headerlink" title="0.1.1"></a>0.1.1</h4><p>对于回文数判断，最直接的思路应该是得到整数对应的高位和低位，依次进行比较，但这样未免繁琐，需要考虑整数的位数。这种思路只关注了回文数形式上的特征。<br>而另一种简洁的思路是不关注单独的每一位，而是尝试把整数倒转过来，通过对判断前后是否相等直接得到结果。这种思路无疑是把握了回文数的本质。</p>
-<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><figcaption><span>{.line-numbers}</span></figcaption><table><tr><td class="code"><pre><span class="line"><span class="keyword">while</span>(n){</span><br><span class="line">   q=q*<span class="number">10</span>+n%<span class="number">10</span>;</span><br><span class="line">   n/=<span class="number">10</span>;</span><br><span class="line">}</span><br><span class="line"><span class="keyword">if</span> (s==q)</span><br></pre></td></tr></table></figure></div>
-
-<h4 id="0-1-3"><a href="#0-1-3" class="headerlink" title="0.1.3"></a>0.1.3</h4><p>通过 shell 脚本实现对文本的处理，能够按行选择性读取文本的 <code>sed</code> 指令显然是个很好的选择，把输出重定向即可按照要求创建文件（注意覆盖写即可）</p>
-<div class="code-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">sed -n '8p; 32p; 128p; 512p; 1024p' "$1" &gt; "$2"</span><br></pre></td></tr></table></figure></div>
-
-<h3 id="Exercise-0-2"><a href="#Exercise-0-2" class="headerlink" title="Exercise 0.2"></a>Exercise 0.2</h3><h4 id="0-2-1"><a href="#0-2-1" class="headerlink" title="0.2.1"></a>0.2.1</h4><p>注意取变量的值时需要加上 <code>$</code> 符号，对变量赋值时可采用 <code>let</code>（不用加 <code>$</code> ） 或 <code>(())</code>（需要加 <code>$</code> 取值），但都要注意 <code>=</code> 两边不能有空格。</p>
-<h3 id="Exercise-0-3"><a href="#Exercise-0-3" class="headerlink" title="Exercise 0.3"></a>Exercise 0.3</h3><h4 id="0-3-1"><a href="#0-3-1" class="headerlink" title="0.3.1"></a>0.3.1</h4><p>使用 <code>grep</code> 命令来在文件中匹配字符串，通过 <code>-n</code>选项使输出的行带上行号（行号与行之间以 <code>:</code> 分隔）。<br><br>通过管道 <code>|</code> 将输出的结果作为参数传给 <code>awk</code> 指令。<br><br>使用 <code>-F:</code> 选项将传入的字符串按照 <code>:</code> 分隔，同时使用 <code>{print $1}</code> 方法打印分割后的第一个字符串（即行号）。<br><br>通过输出重定向将结果输出到文件中。</p>
-<h3 id="Exercise-0-4"><a href="#Exercise-0-4" class="headerlink" title="Exercise 0.4"></a>Exercise 0.4</h3><h4 id="0-4-1"><a href="#0-4-1" class="headerlink" title="0.4.1"></a>0.4.1</h4><p>使用 <code>sed</code> 指令时，注意加上 <code>-i</code> 选项使得可以直接修改文件。使用正则表达式进行替换时，注意加上 <code>/g</code> 使得可以匹配全部的项（否则只是每行第一个）</p>
-<h4 id="0-4-2"><a href="#0-4-2" class="headerlink" title="0.4.2"></a>0.4.2</h4><p>使用 <code>gcc</code> 编译时，应注意到 <code>fibo.c</code> 和 <code>main.c</code> 引用的头文件并不在标准库中，应使用 <code>-I</code> 选项指定头文件目录。同时注意到 <code>main.c</code> 作为程序的入口调用了 <code>fibo.c</code> 中的函数，应把二者放在一起编译链接。</p>
-<h2 id="实验体会"><a href="#实验体会" class="headerlink" title="实验体会"></a>实验体会</h2><blockquote>
-<p>熟能生巧！熟能生巧！熟能生巧！</p>
-</blockquote>
-<p>lab0实验作为 OS 实验的铺垫环节，旨在帮助我们掌握深入理解基本概念，灵活运用各种工具，其本身并无多大难度。<br><br>面对繁杂的指令，可能会认为有参考就不需要太多的记忆。但事实上对各种指令的记忆正是灵活运用的一部分。<br><br>在需要时去查看指导书固然不错，但这种情况下我们往往只会机械地照搬示例指令，而不能以更好地方式去运用指令，同时会消耗大量时间在不必要的事情上（记忆错误debug、提笔忘字查refer）。<br><br>熟稔于心是灵活运用的前提。从某种程度上说，指令就是一个个穴位，只有打通任督二脉，才能练就绝世武功。</p>
-]]></content>
-      <categories>
-        <category>OS</category>
-      </categories>
-      <tags>
-        <tag>shell</tag>
-        <tag>git</tag>
       </tags>
   </entry>
 </search>
